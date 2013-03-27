@@ -81,5 +81,5 @@ api.add_resource(User, '/<string:user_id>')
 api.add_resource(Queue, '/<string:user_id>/queue')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
 
