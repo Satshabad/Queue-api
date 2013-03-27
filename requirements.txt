@@ -1,0 +1,12 @@
+Flask==0.9
+Flask-RESTful==0.1.7
+Jinja2==2.6
+SQLAlchemy==0.8.0
+Werkzeug==0.8.3
+argparse==1.2.1
+nose==1.2.1
+py==1.4.13
+pycrypto==2.6
+pytest==2.3.4
+requests==1.1.0
+wsgiref==0.1.2
