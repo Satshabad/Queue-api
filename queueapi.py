@@ -85,7 +85,7 @@ class Queue(Resource):
         orm_songs = db.session.query(Song).filter(Song.user_id == user_id).all()
 
         songs = []
-        for orm_song in db.session.query(Song):
+        for orm_song in orm_songs:
             songs.append(orm_song.dictify())
 
         return {"queue":songs}
