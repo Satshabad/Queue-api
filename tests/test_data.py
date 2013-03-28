@@ -24,8 +24,8 @@ class DataTests(unittest.TestCase):
                     "mbid": "38914b29-7788-4cff-80b7-1ced523f8675",
                     "name": "Back in Black"
                 },
-                "loved": "0",
-                "streamable": "0",
+                "loved": false,
+                "streamable": false,
                 "name": "Hells Bells",
                 "artist": {
                     "mbid": "66c662b6-6e2f-4930-8610-912e24c63ed1",
@@ -69,9 +69,7 @@ class DataTests(unittest.TestCase):
                     }
                 ],
                 "mbid": "4f8c9450-4aef-4e76-a7b7-ca240b9e3c15",
-                "date": {
-                    "uts": "1364267224"
-                }
+                "uts": "1364267224"
             }
         ]
     }
