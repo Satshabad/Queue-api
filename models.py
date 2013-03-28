@@ -1,27 +1,20 @@
 import calendar
 import json
 
-import sqlalchemy
-from sqlalchemy.ext.declarative import declarative_base
+from queue import db
 
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship, backref
-
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.types import DateTime, Boolean
-
-from sqlalchemy import create_engine
-from sqlalchemy.orm import scoped_session, sessionmaker
-from sqlalchemy.ext.declarative import declarative_base
+ForeignKey = db.ForeignKey
+relationship = db.relationship
+backref = db.backref
+Column = db.Column
+Integer = db.Integer
+String = db.String
+DateTime = db.DateTime
+Boolean = db.Boolean
 
 
-engine = create_engine('sqlite:////tmp/queue.db', convert_unicode=True)
-db_session = scoped_session(sessionmaker(autocommit=False,
-                                         autoflush=False,
-                                         bind=engine))
-Base = declarative_base(engine)
 
-class User(Base):
+class User(db.Model):
     __tablename__ = 'users'
 
     def __init__(self, name, auth):
@@ -42,7 +35,7 @@ class User(Base):
     def __repr__(self):
         return "<User('%s','%s', '%s')>" % (self.uname, self.fullname, self.image_link)
 
-class Song(Base):
+class Song(db.Model):
     __tablename__ = 'songs'
 
     id = Column(Integer, primary_key=True)
@@ -69,13 +62,13 @@ class Song(Base):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'listened':self.listened,
+        return {'listened': 1 if self.listened else 0,
                 'from_user': self.queued_by_user.dictify(),
                 'artist': self.artist.dictify(),
                 'album': self.album.dictify(),
                 'name': self.name,
                 'date_queued':calendar.timegm(self.date_queued.utctimetuple()),
-                'size':{
+                'images':{
                         'small':self.small_image_link,
                         'medium':self.medium_image_link,
                         'large':self.large_image_link
@@ -85,7 +78,7 @@ class Song(Base):
     def __repr__(self):
         return "<Song('%s','%s', '%s', '%s')>" % (self.name, self.artist, self.album, self.user_id)
 
-class Artist(Base):
+class Artist(db.Model):
     __tablename__ = 'artists'
 
     id = Column(Integer, primary_key=True)
@@ -100,7 +93,7 @@ class Artist(Base):
         return {
                 'name':self.name,
                 'mbid':self.mbid,
-                'size':{
+                'images':{
                         'small':self.small_image_link,
                         'medium':self.medium_image_link,
                         'large':self.large_image_link
@@ -111,7 +104,7 @@ class Artist(Base):
         return "<Artist('%s','%s')>" % (self.name, self.id)
 
 
-class Album(Base):
+class Album(db.Model):
     __tablename__ = 'albums'
 
     id = Column(Integer, primary_key=True)
@@ -128,5 +121,3 @@ class Album(Base):
     def __repr__(self):
         return "<Album('%s','%s')>" % (self.name, self.id)
 
-
-Base.metadata.create_all(engine)

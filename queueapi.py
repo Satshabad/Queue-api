@@ -2,24 +2,16 @@ import datetime
 import json
 
 from flask import Flask, request
-from flask.ext.restful import Resource, Api, reqparse
+from flask.ext.restful import Resource, Api
+
 import requests
 
-import models
+from queue import app, api, db
+
 from models import Song, User, Artist, Album
-from models import db_session
 
-API_URL = "http://ws.audioscrobbler.com/2.0/?"
-API_KEY = "7caf7bfb662c58f659df4446c7200f3c&"
-
-app = Flask(__name__)
-api = Api(app)
-
-parser = reqparse.RequestParser()
-parser.add_argument('song', type=dict)
-parser.add_argument('auth', type=str)
-parser.add_argument('from_user_id', type=str)
-parser.add_argument('default', type=str)
+API_URL = app.config['API_URL']
+API_KEY = app.config['API_KEY']
 
 def fix_lastfm_data(data):
     data['recenttracks'][u'metadata'] = data['recenttracks'].pop('@attr')
@@ -28,8 +20,8 @@ def fix_lastfm_data(data):
     for i, track in enumerate(data['recenttracks']['tracks']):
 
         track['album'][u'name'] = track['album'].pop('#text')
-        track['streamable'] = bool(int(track['streamable']))
-        track['loved'] = bool(int(track['loved']))
+        track['streamable'] = int(track['streamable'])
+        track['loved'] = int(track['loved'])
 
         del track['artist']['url']
 
@@ -42,15 +34,20 @@ def fix_lastfm_data(data):
             track['nowplaying'] = True
             del track["@attr"]
 
-        track[u'images'] = track.pop('image')
+        track[u'images'] = {}
 
-        for image in track['images']:
-            image[u'url'] = image.pop('#text')
+        for image in track['image']:
+            track['images'][image['size']] = image.pop('#text')
 
-        track['artist'][u'images'] = track['artist'].pop('image')
+        del track['image']
 
-        for image in track['artist']['images']:
-            image[u'url'] = image.pop('#text')
+
+        track['artist'][u'images'] = {}
+
+        for image in track['artist']['image']:
+             track['artist'][u'images'][image['size']] = image.pop('#text')
+
+        del track['artist'][u'image']
 
     return data
 
@@ -58,9 +55,6 @@ def fix_lastfm_data(data):
 
 
 
-
-def get_args(args):
-    pass
 
 class Listens(Resource):
     def get(self, user_name):
@@ -70,7 +64,7 @@ class Listens(Resource):
 
 class Friends(Resource):
     def get(self, user_name):
-        args = parser.parse_args()
+        args = request.json
         auth = map(args.get, ['auth'])
         pass
 
@@ -79,22 +73,19 @@ class UserAPI(Resource):
         args = request.json
         auth, default = map(args.get, ['auth', 'default'])
         u = User(user_name, auth)
-        db_session.add(u)
-        db_session.commit()
+        db.session.add(u)
+        db.session.commit()
 
         return {"status":"OK"}
 
 
 class Queue(Resource):
     def get(self, user_name):
-        user_id = db_session.query(User.id).filter(User.uname == user_name).one()[0]
-        orm_songs = db_session.query(Song).filter(Song.user_id == user_id).all()
+        user_id = db.session.query(User).filter(User.uname == user_name).one().id
+        orm_songs = db.session.query(Song).filter(Song.user_id == user_id).all()
 
-        for song in db_session.query(Song):
-            print song
         songs = []
-
-        for orm_song in db_session.query(Song):
+        for orm_song in db.session.query(Song):
             songs.append(orm_song.dictify())
 
         return {"queue":songs}
@@ -103,8 +94,8 @@ class Queue(Resource):
 
         args = request.json
         auth, song, from_user_id = map(args.get, ['auth', 'song', 'from_user_id'])
-        from_user = db_session.query(User).filter(User.uname == from_user_id).one()
-        to_user = db_session.query(User).filter(User.uname == user_name).one()
+        from_user = db.session.query(User).filter(User.uname == from_user_id).one()
+        to_user = db.session.query(User).filter(User.uname == user_name).one()
 
         if from_user and to_user:
 
@@ -126,11 +117,11 @@ class Queue(Resource):
 
             orm_song.artist = orm_artist
             orm_song.album = orm_album
-            db_session.add(orm_song)
-            db_session.add(orm_album)
-            db_session.add(orm_artist)
+            db.session.add(orm_song)
+            db.session.add(orm_album)
+            db.session.add(orm_artist)
 
-            db_session.commit()
+            db.session.commit()
 
             return {"status":"OK"}
         return {"status":"Not OK"}
@@ -147,7 +138,7 @@ api.add_resource(Queue, '/<string:user_name>/queue')
 
 @app.teardown_request
 def shutdown_session(exception=None):
-    db_session.remove()
+    db.session.remove()
 
 
 if __name__ == '__main__':
