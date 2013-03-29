@@ -13,8 +13,5 @@ app.config.from_object(__name__)
 api = Api(app)
 db = SQLAlchemy(app)
 
-def init_db():
-    db.create_all()
+import models
 
-if __name__ == "__main__":
-    init_db()
