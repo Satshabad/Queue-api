@@ -35,6 +35,20 @@ class User(db.Model):
     def __repr__(self):
         return "<User('%s','%s', '%s')>" % (self.uname, self.fullname, self.image_link)
 
+class Friend(db.Model):
+    __tablename__ = 'friends'
+
+    def __init__(self, name, fb_id, user):
+        self.fullname = name
+        self.fb_id = fb_id
+        self.user = user
+
+    id = Column(Integer, primary_key=True)
+    fullname = Column(String)
+    fb_id = Column(Integer)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", backref=backref('friends', order_by=date_queued))
+
 class Song(db.Model):
     __tablename__ = 'songs'
 

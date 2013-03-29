@@ -72,7 +72,11 @@ class UserAPI(Resource):
     def post(self, user_name):
         args = request.json
         auth, default = map(args.get, ['auth', 'default'])
-        u = User(user_name, auth)
+        resp = requests.get("http://graph.facebook.com/%s/friends?limit=5000" % auth)
+        friends = resp.json()['data']
+        user = User(user_name, auth)
+        for friend in friends:
+            f = Friend(friend['name'], friend['id'], user)
         db.session.add(u)
         db.session.commit()
 
@@ -93,17 +97,17 @@ class Queue(Resource):
     def post(self, user_name):
 
         args = request.json
-        auth, song, from_user_id = map(args.get, ['auth', 'song', 'from_user_id'])
-        from_user = db.session.query(User).filter(User.uname == from_user_id).one()
+        auth, song, from_user_name = map(args.get, ['auth', 'song', 'from_user_name'])
+        from_user = db.session.query(User).filter(User.uname == from_user_name).one()
         to_user = db.session.query(User).filter(User.uname == user_name).one()
 
         if from_user and to_user:
 
             artist = song['artist']
             orm_artist = Artist(name=artist['name'], mbid=artist['mbid'],
-                                small_image_link=artist['image']['small'],
-                                medium_image_link=artist['image']['small'],
-                                large_image_link=artist['image']['small'])
+                                small_image_link=artist['images']['small'],
+                                medium_image_link=artist['images']['medium'],
+                                large_image_link=artist['images']['large'])
 
             album = song['album']
             orm_album = Album(name=album['name'], mbid=album['mbid'])
@@ -111,9 +115,9 @@ class Queue(Resource):
             orm_song = Song(user=to_user,queued_by_user=from_user,
                             listened=False, name=song['name'],
                             date_queued=datetime.datetime.utcnow(),
-                            small_image_link=song['image']['small'],
-                                medium_image_link=song['image']['small'],
-                                large_image_link=song['image']['small'])
+                            small_image_link=song['images']['small'],
+                                medium_image_link=song['images']['medium'],
+                                large_image_link=song['images']['large'])
 
             orm_song.artist = orm_artist
             orm_song.album = orm_album
@@ -134,11 +138,6 @@ api.add_resource(Listens, '/<string:user_name>/listens')
 api.add_resource(Friends, '/<string:user_name>/friends')
 api.add_resource(UserAPI, '/<string:user_name>')
 api.add_resource(Queue, '/<string:user_name>/queue')
-
-
-@app.teardown_request
-def shutdown_session(exception=None):
-    db.session.remove()
 
 
 if __name__ == '__main__':
