@@ -22,6 +22,7 @@ class User(db.Model):
         self.auth = auth
 
     id = Column(Integer, primary_key=True)
+    fb_id = Column(Integer)
     uname = Column(String)
     fullname = Column(String)
     image_link = Column(String)
@@ -47,7 +48,15 @@ class Friend(db.Model):
     fullname = Column(String)
     fb_id = Column(Integer)
     user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", backref=backref('friends', order_by=date_queued))
+    user = relationship("User", backref=backref('friends', order_by=fullname))
+
+    def dictify(self):
+        return {'name':self.fullname,
+                'fb_id':self.fb_id }
+
+
+    def __repr__(self):
+        return "<Friend('%s', '%s')", (self.fullname, self.user)
 
 class Song(db.Model):
     __tablename__ = 'songs'
