@@ -58,8 +58,8 @@ class Friend(db.Model):
     def __repr__(self):
         return "<Friend('%s', '%s')", (self.fullname, self.user)
 
-class Song(db.Model):
-    __tablename__ = 'songs'
+class SongItem(db.Model):
+    __tablename__ = 'song_items'
 
     id = Column(Integer, primary_key=True)
     listened = Column(Boolean)
@@ -67,10 +67,10 @@ class Song(db.Model):
     date_queued = Column(DateTime)
 
     user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", foreign_keys=[user_id], backref=backref('queue', order_by=date_queued))
+    user = relationship("User", foreign_keys=[user_id], backref=backref('song_items', order_by=date_queued))
 
     queued_by_id = Column(Integer, ForeignKey('users.id'))
-    queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent', order_by=date_queued))
+    queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_song_items', order_by=date_queued))
 
     artist_id = Column(Integer, ForeignKey('artists.id'))
     artist = relationship("Artist", backref=backref('songs', order_by=id))
@@ -85,7 +85,8 @@ class Song(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'listened': 1 if self.listened else 0,
+        return {'type': 'song',
+                'listened': 1 if self.listened else 0,
                 'from_user': self.queued_by_user.dictify(),
                 'artist': self.artist.dictify(),
                 'album': self.album.dictify(),
@@ -100,6 +101,73 @@ class Song(db.Model):
 
     def __repr__(self):
         return "<Song('%s','%s', '%s', '%s')>" % (self.name, self.artist, self.album, self.user_id)
+
+class NoteItem(db.Model):
+    __tablename__ = 'note_items'
+
+    id = Column(Integer, primary_key=True)
+    listened = Column(Boolean)
+    spotifylink = Column(String)
+    date_queued = Column(DateTime)
+
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", foreign_keys=[user_id], backref=backref('note_items', order_by=date_queued))
+
+    queued_by_id = Column(Integer, ForeignKey('users.id'))
+    queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_note_items', order_by=date_queued))
+
+    text = Column(String)
+
+    def dictify(self):
+        return {'type':'note',
+                'listened': 1 if self.listened else 0,
+                'from_user': self.queued_by_user.dictify(),
+                'date_queued':calendar.timegm(self.date_queued.utctimetuple()),
+                'text':self.text
+                }
+
+
+    def __repr__(self):
+        return "<NoteItem('%s','%s', '%s')>" % (self.name, self.id, self.user)
+
+class ArtistItem(db.Model):
+    __tablename__ = 'artist_items'
+
+    id = Column(Integer, primary_key=True)
+    listened = Column(Boolean)
+    spotifylink = Column(String)
+    date_queued = Column(DateTime)
+
+    user_id = Column(Integer, ForeignKey('users.id'))
+    user = relationship("User", foreign_keys=[user_id], backref=backref('artist_items', order_by=date_queued))
+
+    queued_by_id = Column(Integer, ForeignKey('users.id'))
+    queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_artist_items', order_by=date_queued))
+
+    name = Column(String)
+    mbid = Column(String)
+
+    small_image_link = Column(String)
+    medium_image_link = Column(String)
+    large_image_link = Column(String)
+
+    def dictify(self):
+        return {
+                'type':'artist',
+                'listened': 1 if self.listened else 0,
+                'from_user': self.queued_by_user.dictify(),
+                'date_queued':calendar.timegm(self.date_queued.utctimetuple()),
+                'name':self.name,
+                'mbid':self.mbid,
+                'images':{
+                        'small':self.small_image_link,
+                        'medium':self.medium_image_link,
+                        'large':self.large_image_link
+                    }}
+
+
+    def __repr__(self):
+        return "<ArtistItem('%s','%s', '%s')>" % (self.name, self.id, self.user)
 
 class Artist(db.Model):
     __tablename__ = 'artists'
