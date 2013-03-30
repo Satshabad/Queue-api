@@ -29,8 +29,8 @@ class User(db.Model):
     auth = Column(String)
 
     def dictify(self):
-        return {'user_name':self.uname,
-                'full_name':self.fullname,
+        return {'userName':self.uname,
+                'fullName':self.fullname,
                 'image':self.image_link}
 
     def __repr__(self):
@@ -52,7 +52,7 @@ class Friend(db.Model):
 
     def dictify(self):
         return {'name':self.fullname,
-                'fb_id':self.fb_id }
+                'fbId':self.fb_id }
 
 
     def __repr__(self):
@@ -87,16 +87,18 @@ class SongItem(db.Model):
     def dictify(self):
         return {'type': 'song',
                 'listened': 1 if self.listened else 0,
-                'from_user': self.queued_by_user.dictify(),
-                'artist': self.artist.dictify(),
-                'album': self.album.dictify(),
-                'name': self.name,
-                'date_queued':calendar.timegm(self.date_queued.utctimetuple()),
-                'images':{
+                'fromUser': self.queued_by_user.dictify(),
+                'song':{
+                    'artist': self.artist.dictify(),
+                    'album': self.album.dictify(),
+                    'name': self.name },
+                    'images':{
                         'small':self.small_image_link,
                         'medium':self.medium_image_link,
                         'large':self.large_image_link
-                  }}
+                     },
+                'dateQueued':calendar.timegm(self.date_queued.utctimetuple())
+              }
 
 
     def __repr__(self):
@@ -120,10 +122,12 @@ class NoteItem(db.Model):
 
     def dictify(self):
         return {'type':'note',
+                'note':{
+                    'text':self.text
+                },
                 'listened': 1 if self.listened else 0,
-                'from_user': self.queued_by_user.dictify(),
-                'date_queued':calendar.timegm(self.date_queued.utctimetuple()),
-                'text':self.text
+                'fromUser': self.queued_by_user.dictify(),
+                'dateQueued':calendar.timegm(self.date_queued.utctimetuple()),
                 }
 
 
@@ -145,7 +149,6 @@ class ArtistItem(db.Model):
     queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_artist_items', order_by=date_queued))
 
     name = Column(String)
-    mbid = Column(String)
 
     small_image_link = Column(String)
     medium_image_link = Column(String)
@@ -155,15 +158,17 @@ class ArtistItem(db.Model):
         return {
                 'type':'artist',
                 'listened': 1 if self.listened else 0,
-                'from_user': self.queued_by_user.dictify(),
-                'date_queued':calendar.timegm(self.date_queued.utctimetuple()),
-                'name':self.name,
-                'mbid':self.mbid,
-                'images':{
+                'fromUser': self.queued_by_user.dictify(),
+                'dateQueued':calendar.timegm(self.date_queued.utctimetuple()),
+                'artist':{
+                    'name':self.name,
+                    'images':{
                         'small':self.small_image_link,
                         'medium':self.medium_image_link,
                         'large':self.large_image_link
-                    }}
+                    }
+                }
+        }
 
 
     def __repr__(self):
@@ -174,7 +179,6 @@ class Artist(db.Model):
 
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    mbid = Column(String)
 
     small_image_link = Column(String)
     medium_image_link = Column(String)
@@ -183,7 +187,6 @@ class Artist(db.Model):
     def dictify(self):
         return {
                 'name':self.name,
-                'mbid':self.mbid,
                 'images':{
                         'small':self.small_image_link,
                         'medium':self.medium_image_link,
@@ -205,7 +208,6 @@ class Album(db.Model):
     def dictify(self):
         return {
                 'name':self.name,
-                'mbid':self.mbid
                 }
 
 
