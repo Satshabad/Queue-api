@@ -19,31 +19,39 @@ def fix_lastfm_listens_data(data):
     data['recenttracks'][u'tracks'] = data['recenttracks'].pop('track')
 
     for i, track in enumerate(data['recenttracks']['tracks']):
-
-        track['album'][u'name'] = track['album'].pop('#text')
-        track['streamable'] = int(track['streamable'])
-        track['loved'] = int(track['loved'])
+        del track['streamable']
+        del track['loved']
 
         del track['artist']['url']
+        del track['url']
+        del track['mbid']
+        del track['artist']['mbid']
 
         if track.has_key("date"):
             del track['date']['#text']
-            track.update(track["date"])
+            track['dateListened'] = track["date"]['uts']
             del track['date']
+        else:
+            track['dateListened'] = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
 
         if track.has_key("@attr"):
-            track['nowplaying'] = True
             del track["@attr"]
 
-    fix_image_data(track)
-    fix_image_data(track['artist'])
+        fix_image_data(track)
+        fix_image_data(track['artist'])
+
+        track['song'] = {}
+        track['song']['album'] = track.pop('album')
+        track['song']['album'][u'name'] = track['song']['album'].pop('#text')
+        track['song']['artist'] = track.pop('artist')
+
+
 
     return data
 
 def fix_image_data(data):
     if 'image' in data:
         data['images'] = {}
-        print data
         for image in data['image']:
             data['images'][image['size']] = image.pop('#text')
 
@@ -165,8 +173,8 @@ class Queue(Resource):
         for orm_item in orm_queue:
             queue.append(orm_item.dictify())
 
-        queue = sorted(queue, key=lambda x: (x['listened'], -1*x['date_queued']))
-        return {"queue":queue}
+        queue = sorted(queue, key=lambda x: (x['listened'], -1*x['dateQueued']))
+        return {"queue":{"items":queue}}
 
     def post(self, user_name):
 
@@ -189,13 +197,13 @@ class Queue(Resource):
 
         if item['type'] == 'song':
             artist = item['artist']
-            orm_artist = Artist(name=artist['name'], mbid=artist['mbid'],
+            orm_artist = Artist(name=artist['name'],
                                 small_image_link=artist['images']['small'],
                                 medium_image_link=artist['images']['medium'],
                                 large_image_link=artist['images']['large'])
 
             album = item['album']
-            orm_album = Album(name=album['name'], mbid=album['mbid'])
+            orm_album = Album(name=album['name'])
 
             orm_song = SongItem(user=to_user,queued_by_user=from_user,
                             listened=False, name=item['name'],
