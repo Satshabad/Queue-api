@@ -9,7 +9,6 @@ backref = db.backref
 Column = db.Column
 Integer = db.Integer
 String = db.String
-DateTime = db.DateTime
 Boolean = db.Boolean
 
 
@@ -64,7 +63,7 @@ class SongItem(db.Model):
     id = Column(Integer, primary_key=True)
     listened = Column(Boolean)
     spotifylink = Column(String)
-    date_queued = Column(DateTime)
+    date_queued = Column(Integer)
 
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship("User", foreign_keys=[user_id], backref=backref('song_items', order_by=date_queued))
@@ -78,6 +77,9 @@ class SongItem(db.Model):
     album_id = Column(Integer, ForeignKey('albums.id'))
     album = relationship("Album", backref=backref('songs', order_by=id))
 
+    urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
+    urls = relationship("UrlsForItem", foreign_keys=[urls_id], backref=backref('song_item', order_by=date_queued))
+
     name = Column(String)
 
     small_image_link = Column(String)
@@ -88,16 +90,18 @@ class SongItem(db.Model):
         return {'type': 'song',
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
+                'urls':self.urls.dictify(),
                 'song':{
                     'artist': self.artist.dictify(),
                     'album': self.album.dictify(),
-                    'name': self.name },
+                    'name': self.name,
                     'images':{
                         'small':self.small_image_link,
                         'medium':self.medium_image_link,
                         'large':self.large_image_link
-                     },
-                'dateQueued':calendar.timegm(self.date_queued.utctimetuple())
+                     }
+                },
+                'dateQueued':self.date_queued
               }
 
 
@@ -110,7 +114,7 @@ class NoteItem(db.Model):
     id = Column(Integer, primary_key=True)
     listened = Column(Boolean)
     spotifylink = Column(String)
-    date_queued = Column(DateTime)
+    date_queued = Column(Integer)
 
     small_image_link = Column(String)
     medium_image_link = Column(String)
@@ -122,6 +126,10 @@ class NoteItem(db.Model):
 
     queued_by_id = Column(Integer, ForeignKey('users.id'))
     queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_note_items', order_by=date_queued))
+
+    urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
+    urls = relationship("UrlsForItem", foreign_keys=[urls_id], backref=backref('note_item', order_by=date_queued))
+
 
     text = Column(String)
 
@@ -135,9 +143,10 @@ class NoteItem(db.Model):
                         'large':self.large_image_link
                      }
                 },
+                'urls':self.urls.dictify(),
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
-                'dateQueued':calendar.timegm(self.date_queued.utctimetuple()),
+                'dateQueued':self.date_queued
         }
 
 
@@ -150,13 +159,16 @@ class ArtistItem(db.Model):
     id = Column(Integer, primary_key=True)
     listened = Column(Boolean)
     spotifylink = Column(String)
-    date_queued = Column(DateTime)
+    date_queued = Column(Integer)
 
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship("User", foreign_keys=[user_id], backref=backref('artist_items', order_by=date_queued))
 
     queued_by_id = Column(Integer, ForeignKey('users.id'))
     queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_artist_items', order_by=date_queued))
+
+    urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
+    urls = relationship("UrlsForItem", foreign_keys=[urls_id], backref=backref('artist_item', order_by=date_queued))
 
     name = Column(String)
 
@@ -169,7 +181,8 @@ class ArtistItem(db.Model):
                 'type':'artist',
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
-                'dateQueued':calendar.timegm(self.date_queued.utctimetuple()),
+                'dateQueued':self.date_queued,
+                'urls':self.urls.dictify(),
                 'artist':{
                     'name':self.name,
                     'images':{
@@ -223,4 +236,21 @@ class Album(db.Model):
 
     def __repr__(self):
         return "<Album('%s','%s')>" % (self.name, self.id)
+
+class UrlsForItem(db.Model):
+    __tablename__ = "urlsforitems"
+    id = Column(Integer, primary_key=True)
+    spotify_url = Column(String)
+
+    def dictify(self):
+        return {
+                'spotify':self.spotify_url,
+                }
+
+
+    def __repr__(self):
+        return "<Urls('%s','%s')>" % (self.spotify_url, self.id)
+
+
+
 
