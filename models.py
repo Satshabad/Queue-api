@@ -112,6 +112,11 @@ class NoteItem(db.Model):
     spotifylink = Column(String)
     date_queued = Column(DateTime)
 
+    small_image_link = Column(String)
+    medium_image_link = Column(String)
+    large_image_link = Column(String)
+
+
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship("User", foreign_keys=[user_id], backref=backref('note_items', order_by=date_queued))
 
@@ -123,12 +128,17 @@ class NoteItem(db.Model):
     def dictify(self):
         return {'type':'note',
                 'note':{
-                    'text':self.text
+                    'text':self.text,
+                    'images':{
+                        'small':self.small_image_link,
+                        'medium':self.medium_image_link,
+                        'large':self.large_image_link
+                     }
                 },
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
                 'dateQueued':calendar.timegm(self.date_queued.utctimetuple()),
-                }
+        }
 
 
     def __repr__(self):
