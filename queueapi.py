@@ -147,19 +147,20 @@ class UserAPI(Resource):
     def post(self, user_name):
         args = request.json
         access_token = args['accessToken']
-        default = args['default']
-        fb_id = args['fb_id']
+        fb_id = args['fbId']
+        print "%s/%s/friends?limit=5000&access_token=%s" % (FB_API_URL, fb_id, access_token)
         resp = requests.get("%s/%s/friends?limit=5000&access_token=%s" %
                                 (FB_API_URL, fb_id, access_token))
         if 'data' not in resp.json():
-            pass
-            #return {"status":500, "message": 'problem getting friends'}
+            print resp.reason
+            return {"status":500, "message": 'problem getting friends'}
 
-        #friends = resp.json()['data']
+        friends = resp.json()['data']
         friends = []
-        user = User(user_name, access_token)
+        user = User(fb_id=fb_id, uname=user_name, access_token=access_token,
+                    fullname=args['fullname'], image_link=args['imageLink'])
         for friend in friends:
-            f = Friend(friend['name'], friend['id'], user)
+            f = Friend(full_name=friend['name'], fb_id=friend['id'], user=user)
             db.session.add(f)
 
         db.session.add(user)
@@ -207,6 +208,9 @@ class Queue(Resource):
 
         if not to_user:
             return no_such_user(to_user)
+
+        if not from_user.access_token == access_token:
+           return {'status':400, 'message':'invalid accessToken'}
 
         if not is_friends(from_user, to_user):
            return {'status':400, 'message':'users are not friends'}
@@ -277,7 +281,6 @@ def no_such_user(user_name):
     return {"status":400, "message":"no such user %s" % user_name}
 
 def is_friends(user1, user2):
-    return True #FORNOW
     friends = list(db.session.query(Friend).filter(Friend.user_id == user1.id)\
                                  .filter(Friend.user_id == user2.id))
     if not friends:

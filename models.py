@@ -16,16 +16,12 @@ Boolean = db.Boolean
 class User(db.Model):
     __tablename__ = 'users'
 
-    def __init__(self, name, auth):
-        self.uname = name
-        self.auth = auth
-
     id = Column(Integer, primary_key=True)
     fb_id = Column(Integer)
     uname = Column(String)
     fullname = Column(String)
     image_link = Column(String)
-    auth = Column(String)
+    access_token = Column(String)
 
     def dictify(self):
         return {'userName':self.uname,
@@ -37,11 +33,6 @@ class User(db.Model):
 
 class Friend(db.Model):
     __tablename__ = 'friends'
-
-    def __init__(self, name, fb_id, user):
-        self.fullname = name
-        self.fb_id = fb_id
-        self.user = user
 
     id = Column(Integer, primary_key=True)
     fullname = Column(String)
