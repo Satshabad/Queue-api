@@ -1,4 +1,4 @@
 base:
   '*':
-    - clone
+    - webserver
     - queue
