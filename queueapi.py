@@ -9,7 +9,8 @@ import requests
 
 from queue import app, api, db
 
-from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem
+from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem
+
 
 SP_API_URL = app.config['SP_API_URL']
 LF_API_URL = app.config['LF_API_URL']
