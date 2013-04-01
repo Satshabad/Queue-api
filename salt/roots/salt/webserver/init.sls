@@ -11,6 +11,19 @@ uwsgipip:
     - require:
        - pkg: uwsgi_pkg_reqs
 
+/etc/init/uwsgi.conf:
+  file.managed:
+    - source: salt://webserver/uwsgi.conf
+    - mode: 755
+
+uwsgi_service:
+  - service:
+    - running
+    - require:
+      - pip: uwsgipip
+    - watch:
+      file: /etc/init/uwsgi.conf
+
 nginx:
   pkg:
     - latest
@@ -25,8 +38,6 @@ nginx:
     - source: salt://webserver/nginx.conf
     - makedirs: True
     - mode: 755
-
-
 
 /etc/nginx/sites-enabled/default:
   file.symlink:
