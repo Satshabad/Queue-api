@@ -130,6 +130,40 @@ class Queue(Resource):
             .filter(NoteItem.id == item_id).one()
             db.session.remove(note)
 
+        db.session.commit()
+
+    def put(self, user_name):
+        access_token = request.values['accessToken']
+        item_type = request.values['type']
+        item_id = request.values['itemId']
+        listened = request.values['listened']
+        user = get_user(user_name)
+
+        if not user.access_token == access_token:
+           return {'status':400, 'message':'invalid accessToken'}
+
+        if item_type == 'song':
+            song = db.session.query(SongItem)\
+            .filter(SongItem.user_id == user.id)\
+            .filter(SongItem.id == item_id).one()
+            song.listened = listened
+            db.session.add(song)
+        if item_type == 'artist':
+            artist = db.session.query(ArtistItem)\
+            .filter(ArtistItem.user_id == user.id)\
+            .filter(ArtistItem.id == item_id).one()
+            artist.listened = listened
+            db.session.add(artist)
+        if item_type == 'note':
+            note = db.session.query(NoteItem)\
+            .filter(NoteItem.user_id == user.id)\
+            .filter(NoteItem.id == item_id).one()
+            note.listened = listened
+            db.session.add(note)
+
+        db.session.commit()
+
+
     def post(self, user_name):
 
         queue_item = request.json
