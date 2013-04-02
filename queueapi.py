@@ -1,6 +1,7 @@
 import datetime
 import json
 import calendar
+import os
 
 from flask import Flask, request
 from flask.ext.restful import Resource, Api
@@ -17,6 +18,18 @@ SP_API_URL = app.config['SP_API_URL']
 LF_API_URL = app.config['LF_API_URL']
 LF_API_KEY = app.config['LF_API_KEY']
 FB_API_URL = app.config['FB_API_URL']
+
+@app.route('/db/destroy')
+def destroy_db():
+    os.remove(app.config['DATABASE_FILE'])
+    return 'so it is'
+
+
+@app.route('/db/create')
+def create_db():
+    import init_db
+    init_db.init_db()
+    return 'so it is'
 
 class Search(Resource):
     def get(self, search_text):
