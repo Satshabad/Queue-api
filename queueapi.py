@@ -79,7 +79,7 @@ class UserAPI(Resource):
         resp = requests.get("%s/%s/friends?limit=5000&access_token=%s" %
                                 (FB_API_URL, fb_id, access_token))
         if 'data' not in resp.json():
-            return {"status":500, "message": 'problem getting friends'}
+            return {"message": 'problem getting friends'}, 500
 
         friends = resp.json()['data']
         friends = []
@@ -125,7 +125,7 @@ class Queue(Resource):
         user = get_user(user_name)
 
         if not user.access_token == access_token:
-           return {'status':400, 'message':'invalid accessToken'}
+           return {'message':'invalid accessToken'}, 400
 
         if item_type == 'song':
             song = db.session.query(SongItem)\
@@ -153,7 +153,7 @@ class Queue(Resource):
         user = get_user(user_name)
 
         if not user.access_token == access_token:
-           return {'status':400, 'message':'invalid accessToken'}
+           return {'message':'invalid accessToken'}, 400
 
         if item_type == 'song':
             song = db.session.query(SongItem)\
@@ -195,10 +195,10 @@ class Queue(Resource):
             return no_such_user(to_user)
 
         if not from_user.access_token == access_token:
-           return {'status':400, 'message':'invalid accessToken'}
+           return {'message':'invalid accessToken'}, 400
 
         if not is_friends(from_user, to_user):
-           return {'status':400, 'message':'users are not friends'}
+           return {'message':'users are not friends'}, 400
 
         if queue_item['type'] == 'song':
             spotify_url = get_spotify_link_for_song(media)
@@ -263,7 +263,7 @@ def get_user(user_name):
     return users[0]
 
 def no_such_user(user_name):
-    return {"status":400, "message":"no such user %s" % user_name}
+    return {"message":"no such user %s" % user_name}, 400
 
 def is_friends(user1, user2):
     friends = list(db.session.query(Friend).filter(Friend.user_id == user1.id)\
