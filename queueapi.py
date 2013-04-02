@@ -105,6 +105,31 @@ class Queue(Resource):
         queue = sorted(queue, key=lambda x: (x['listened'], -1*x['dateQueued']))
         return {"queue":{"items":queue}}
 
+    def delete(self, user_name):
+        access_token = request.values['accessToken']
+        item_type = request.values['type']
+        item_id = request.values['itemId']
+        user = get_user(user_name)
+
+        if not user.access_token == access_token:
+           return {'status':400, 'message':'invalid accessToken'}
+
+        if item_type == 'song':
+            song = db.session.query(SongItem)\
+            .filter(SongItem.user_id == user.id)\
+            .filter(SongItem.id == item_id).one()
+            db.session.remove(song)
+        if item_type == 'artist':
+            artist = db.session.query(ArtistItem)\
+            .filter(ArtistItem.user_id == user.id)\
+            .filter(ArtistItem.id == item_id).one()
+            db.session.remove(artist)
+        if item_type == 'note':
+            note = db.session.query(NoteItem)\
+            .filter(NoteItem.user_id == user.id)\
+            .filter(NoteItem.id == item_id).one()
+            db.session.remove(note)
+
     def post(self, user_name):
 
         queue_item = request.json

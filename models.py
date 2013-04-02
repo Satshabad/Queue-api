@@ -78,7 +78,8 @@ class SongItem(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'type': 'song',
+        return {'itemId':self.id,
+                'type': 'song',
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
                 'urls':self.urls.dictify(),
@@ -125,7 +126,8 @@ class NoteItem(db.Model):
     text = Column(String)
 
     def dictify(self):
-        return {'type':'note',
+        return {'itemId':self.id,
+                'type':'note',
                 'note':{
                     'text':self.text,
                     'images':{
@@ -168,7 +170,7 @@ class ArtistItem(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {
+        return {'itemId':self.id,
                 'type':'artist',
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
