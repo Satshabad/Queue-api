@@ -136,7 +136,7 @@ class Queue(Resource):
         access_token = request.values['accessToken']
         item_type = request.values['type']
         item_id = request.values['itemId']
-        listened = request.values['listened']
+        listened = True if request.values['listened'] == 'true' else False
         user = get_user(user_name)
 
         if not user.access_token == access_token:
