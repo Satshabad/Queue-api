@@ -10,6 +10,7 @@ import requests
 from queue import app, api, db
 
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem
+from fixdata import fix_lastfm_listens_data, fix_image_data, fix_lf_track_search, fix_lf_artist_search, fix_search_metadata
 
 
 SP_API_URL = app.config['SP_API_URL']
@@ -17,95 +18,9 @@ LF_API_URL = app.config['LF_API_URL']
 LF_API_KEY = app.config['LF_API_KEY']
 FB_API_URL = app.config['FB_API_URL']
 
-def fix_lastfm_listens_data(data):
-    data['recentTracks'] = data.pop('recenttracks')
-    data['recentTracks'][u'metadata'] = data['recentTracks'].pop('@attr')
-    data['recentTracks'][u'tracks'] = data['recentTracks'].pop('track')
-
-    for i, track in enumerate(data['recentTracks']['tracks']):
-        del track['streamable']
-        del track['loved']
-
-        del track['artist']['url']
-        del track['url']
-        del track['mbid']
-        del track['artist']['mbid']
-        del track['album']['mbid']
-
-        if track.has_key("date"):
-            del track['date']['#text']
-            track['dateListened'] = track["date"]['uts']
-            del track['date']
-        else:
-            track['dateListened'] = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
-
-        if track.has_key("@attr"):
-            del track["@attr"]
-
-        fix_image_data(track)
-        fix_image_data(track['artist'])
-
-        track['song'] = {}
-        track['song']['name'] = track.pop('name')
-        track['song']['images'] = track.pop('images')
-        track['song']['album'] = track.pop('album')
-        track['song']['album'][u'name'] = track['song']['album'].pop('#text')
-        track['song']['artist'] = track.pop('artist')
-
-
-
-    return data
-
-def fix_image_data(data):
-    if 'image' in data:
-        data['images'] = {}
-        for image in data['image']:
-            data['images'][image['size']] = image.pop('#text')
-
-        del data['image']
-
-
-def fix_lf_track_search(data):
-    fix_search_metadata(data)
-    data['trackResults'] = data.pop('trackmatches')['track']
-    del data['@attr']
-
-    for track in data['trackResults']:
-        fix_image_data(track)
-        del track['streamable']
-        #del track['listeners']
-        del track['mbid']
-        del track['url']
-
-    return data
-
-
-def fix_lf_artist_search(data):
-    fix_search_metadata(data)
-    data['artistResults'] = data.pop('artistmatches')['artist']
-    del data['@attr']
-
-    for artist in data['artistResults']:
-        fix_image_data(artist)
-        del artist['streamable']
-        del artist['mbid']
-        #del artist['listeners']
-        del artist['url']
-
-    return data
-
-def fix_search_metadata(data):
-    data['metadata'] = {}
-    data['metadata']['opensearch:Query'] = data.pop('opensearch:Query')
-    data['metadata']['opensearch:totalResults'] = data.pop('opensearch:totalResults')
-    data['metadata']['opensearch:startIndex'] = data.pop('opensearch:startIndex')
-    data['metadata']['opensearch:itemsPerPage'] = data.pop('opensearch:itemsPerPage')
-
-
 class Search(Resource):
     def get(self, search_text):
         search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
-        print search_url % (LF_API_URL, search_text, LF_API_KEY)
         track_results = requests.get(search_url %
                         (LF_API_URL, search_text, LF_API_KEY)).json()['results']
 
@@ -148,11 +63,9 @@ class UserAPI(Resource):
         args = request.json
         access_token = args['accessToken']
         fb_id = args['fbId']
-        print "%s/%s/friends?limit=5000&access_token=%s" % (FB_API_URL, fb_id, access_token)
         resp = requests.get("%s/%s/friends?limit=5000&access_token=%s" %
                                 (FB_API_URL, fb_id, access_token))
         if 'data' not in resp.json():
-            print resp.reason
             return {"status":500, "message": 'problem getting friends'}
 
         friends = resp.json()['data']
@@ -292,6 +205,10 @@ def get_spotify_link_for_song(song):
     search_text = " ".join([song['name'], song['artist']['name'],
                            song['album']['name']])
     resp = requests.get("%s/search/1/track.json?q=%s" % (SP_API_URL, search_text))
+
+    if not resp.json()['tracks']:
+        return None
+
     link = resp.json()['tracks'][0]['href']
     return link
 
