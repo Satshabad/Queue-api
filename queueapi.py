@@ -288,7 +288,7 @@ def get_spotify_link_for_song(song):
     search_text = " ".join([song['name'], song['artist']['name'],
                            song['album']['name']])
     resp = requests.get("%s/search/1/track.json?q=%s" % (SP_API_URL, search_text))
-
+    app.logger.warning("%s/search/1/track.json?q=%s" % (SP_API_URL, search_text))
     if not resp.json()['tracks']:
         return None
 
