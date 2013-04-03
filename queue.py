@@ -17,3 +17,9 @@ db = SQLAlchemy(app)
 
 import models
 
+if not app.debug:
+    import logging
+    from logging import FileHandler
+    file_handler = FileHandler('/tmp/queue.log')
+    file_handler.setLevel(logging.WARNING)
+    app.logger.addHandler(file_handler)
