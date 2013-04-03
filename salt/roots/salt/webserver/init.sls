@@ -17,12 +17,14 @@ uwsgipip:
     - mode: 755
 
 uwsgi_service:
-  - service:
+  service:
+    - name: uwsgi
     - running
+    - watch:
+      - file: /etc/init/uwsgi.conf
     - require:
       - pip: uwsgipip
-    - watch:
-      file: /etc/init/uwsgi.conf
+
 
 nginx:
   pkg:

@@ -2,3 +2,4 @@ base:
   '*':
     - webserver
     - queue
+#    - sentry
