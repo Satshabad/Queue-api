@@ -291,7 +291,7 @@ def get_spotify_link_for_song(song):
 
     app.logger.warning(resp.status_code)
     if resp.status_code != 200 or not resp.json()['tracks']:
-        return None
+       return None
 
     link = resp.json()['tracks'][0]['href']
     return link
