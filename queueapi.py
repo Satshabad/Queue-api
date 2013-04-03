@@ -73,6 +73,10 @@ class Friends(Resource):
 
 class UserAPI(Resource):
     def post(self, user_name):
+
+        if get_user(user_name):
+           return {'message': 'user already exists'}, 400
+
         args = request.json
         access_token = args['accessToken']
         fb_id = args['fbId']
