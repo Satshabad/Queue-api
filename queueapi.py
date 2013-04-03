@@ -205,7 +205,7 @@ class Queue(Resource):
             app.logger.warning("invalid accessTokenfor user %s" % user_name)
             return {'message':'invalid accessToken'}, 400
 
-        if not is_friends(from_user, to_user):
+        if user_name == from_user_name or not is_friends(from_user, to_user):
             app.logger.warning("users %s is not friends" % user_name)
             return {'message':'users are not friends'}, 400
 
