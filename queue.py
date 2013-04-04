@@ -17,14 +17,14 @@ api = Api(app)
 db = SQLAlchemy(app)
 
 import models
-if not app.debug:
-    import logging
-    from logging import FileHandler
-    file_handler = FileHandler('/tmp/queue.log')
-    file_handler.setLevel(logging.WARNING)
-    from logging import Formatter
-    file_handler.setFormatter(Formatter(
-    '%(asctime)s %(levelname)s: %(message)s '
-    '[in %(pathname)s:%(lineno)d]'
-    ))
-    app.logger.addHandler(file_handler)
+#if not app.debug:
+#    import logging
+#    from logging import FileHandler
+#    file_handler = FileHandler('/tmp/queue.log')
+#    file_handler.setLevel(logging.WARNING)
+#    from logging import Formatter
+#    file_handler.setFormatter(Formatter(
+#    '%(asctime)s %(levelname)s: %(message)s '
+#    '[in %(pathname)s:%(lineno)d]'
+#    ))
+#    app.logger.addHandler(file_handler)
