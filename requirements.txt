@@ -9,5 +9,6 @@ nose==1.2.1
 py==1.4.13
 pycrypto==2.6
 pytest==2.3.4
+raven==3.2.1
 requests==1.1.0
 wsgiref==0.1.2
