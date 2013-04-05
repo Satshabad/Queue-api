@@ -28,9 +28,3 @@ queue:
     - mode: 760
     - makedirs: True
 
-supervisor:
-  pkg.installed
-
-/etc/supervisord.conf:
-  file.managed:
-    - source: salt://queue/supervisord.conf

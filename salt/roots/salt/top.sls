@@ -2,4 +2,5 @@ base:
   '*':
     - webserver
     - queue
-#    - sentry
+    - sentry
+    - satshabad

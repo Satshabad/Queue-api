@@ -1,3 +1,6 @@
+include:
+  - queue
+
 uwsgi_pkg_reqs:
   pkg:
     - installed
@@ -22,6 +25,7 @@ uwsgi_service:
     - running
     - watch:
       - file: /etc/init/uwsgi.conf
+      - git: https://github.com/Satshabad/Queue-API.git
     - require:
       - pip: uwsgipip
 
@@ -40,6 +44,8 @@ nginx:
     - source: salt://webserver/nginx.conf
     - makedirs: True
     - mode: 755
+    - require:
+      - pkg: nginx
 
 /etc/nginx/sites-enabled/default:
   file.symlink:
@@ -48,4 +54,5 @@ nginx:
     - force: True
     - require:
       - file: /etc/nginx/sites-available/default
+      - pkg: nginx
 
