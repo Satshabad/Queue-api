@@ -8,7 +8,7 @@ from flask.ext.restful import Resource, Api
 
 import requests
 
-from queue import app, api, db
+from app import app, api, db
 
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem
 from fixdata import fix_lastfm_listens_data, fix_image_data, fix_lf_track_search, fix_lf_artist_search, fix_search_metadata
