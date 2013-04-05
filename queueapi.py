@@ -8,7 +8,7 @@ from flask.ext.restful import Resource, Api
 
 import requests
 
-from app import app, api, db, sentry
+from main import app, api, db, sentry
 
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem
 from fixdata import fix_lastfm_listens_data, fix_image_data, fix_lf_track_search, fix_lf_artist_search, fix_search_metadata
@@ -31,20 +31,20 @@ def create_db():
     init_db.init_db()
     return 'so it is'
 
-class Search(Resource):
-    def get(self, search_text):
-        search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
-        track_results = requests.get(search_url %
-                        (LF_API_URL, search_text, LF_API_KEY)).json()['results']
+@app.route('/search/<search_text>')
+def get(search_text):
+    search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
+    track_results = requests.get(search_url %
+                    (LF_API_URL, search_text, LF_API_KEY)).json()['results']
 
-        search_url = "%smethod=artist.search&artist=%s&api_key=%sformat=json"
-        artist_results = requests.get(search_url %
-                        (LF_API_URL, search_text, LF_API_KEY)).json()['results']
+    search_url = "%smethod=artist.search&artist=%s&api_key=%sformat=json"
+    artist_results = requests.get(search_url %
+                    (LF_API_URL, search_text, LF_API_KEY)).json()['results']
 
-        results = {'track_results':fix_lf_track_search(track_results),
-                   'artist_results':fix_lf_artist_search(artist_results)}
+    results = {'track_results':fix_lf_track_search(track_results),
+               'artist_results':fix_lf_artist_search(artist_results)}
 
-        return results
+    return results
 
 class Listens(Resource):
     def get(self, user_name):
@@ -313,7 +313,6 @@ api.add_resource(Listens, '/<string:user_name>/listens')
 api.add_resource(Friends, '/<string:user_name>/friends')
 api.add_resource(UserAPI, '/<string:user_name>')
 api.add_resource(Queue, '/<string:user_name>/queue')
-api.add_resource(Search, '/search/<string:search_text>')
 
 
 if __name__ == '__main__':

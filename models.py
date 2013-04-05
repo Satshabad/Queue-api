@@ -1,7 +1,7 @@
 import calendar
 import json
 
-from app import db
+from main import db
 
 ForeignKey = db.ForeignKey
 relationship = db.relationship
