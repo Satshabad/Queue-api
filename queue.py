@@ -12,7 +12,7 @@ SQLALCHEMY_DATABASE_URI = 'sqlite:///%s' % DATABASE_FILE
 
 app = Flask(__name__)
 app.config.from_object(__name__)
-sentry = Sentry(app, dsn='http://localhost:9000')
+sentry = Sentry(app, dsn='http://:0123456789abcde@localhost:9000/1')
 api = Api(app)
 db = SQLAlchemy(app)
 
