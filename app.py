@@ -14,6 +14,7 @@ app = Flask(__name__)
 app.config.from_object(__name__)
 app.config['SENTRY_DSN'] = 'http://ba87f6268ed54183bea4b3ff4ee3a86f:45974bce87574e0ba5fae80e3a48644a@198.199.67.210:9000/2'
 sentry = Sentry(app)
+sentry.captureMessage('test')
 api = Api(app)
 db = SQLAlchemy(app)
 

@@ -1,5 +1,5 @@
 def init_db():
-    from queue import db
+    from app import db
     db.create_all()
 
 if __name__ == '__main__':

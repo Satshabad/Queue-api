@@ -1,7 +1,7 @@
 import calendar
 import json
 
-from queue import db
+from app import db
 
 ForeignKey = db.ForeignKey
 relationship = db.relationship
