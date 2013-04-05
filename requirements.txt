@@ -5,6 +5,7 @@ Jinja2==2.6
 SQLAlchemy==0.8.0
 Werkzeug==0.8.3
 argparse==1.2.1
+blinker==1.2
 nose==1.2.1
 py==1.4.13
 pycrypto==2.6
