@@ -9,7 +9,7 @@ import requests
 
 from main import app, db
 
-from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem
+from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
 from fixdata import fix_lastfm_listens_data, fix_image_data, fix_lf_track_search, fix_lf_artist_search, fix_search_metadata
 
 
@@ -79,17 +79,15 @@ def make_user(user_name):
     args = request.json
     access_token = args['accessToken']
     fb_id = args['fbId']
-    resp = requests.get("%s/%s/friends?limit=5000&access_token=%s" %
-                            (FB_API_URL, fb_id, access_token))
-    if 'data' not in resp.json():
+    friends = get_fb_friends(fb_id, access_token)
+
+    if friends == None:
         return {"message": 'problem getting friends'}, 500
 
-    friends = resp.json()['data']
-    friends = []
     user = User(fb_id=fb_id, uname=user_name, access_token=access_token,
                 fullname=args['fullname'], image_link=args['imageLink'])
     for friend in friends:
-        f = Friend(full_name=friend['name'], fb_id=friend['id'], user=user)
+        f = Friend(fullname=friend['name'], fb_id=friend['id'], user=user)
         db.session.add(f)
 
     db.session.add(user)
@@ -105,56 +103,38 @@ def get_queue(user_name):
     if not user:
         return no_such_user(user_name)
 
-    songs = db.session.query(SongItem)\
-        .filter(SongItem.user_id == user.id).all()
-    artists = db.session.query(ArtistItem)\
-        .filter(ArtistItem.user_id == user.id).all()
-    notes = db.session.query(NoteItem)\
-        .filter(NoteItem.user_id == user.id).all()
-
-    orm_queue = songs + artists + notes
+    items = db.session.query(QueueItem)\
+        .filter(QueueItem.user_id == user.id).all()
+    
     queue = []
-    for orm_item in orm_queue:
-        queue.append(orm_item.dictify())
+    for item in items:
+        queue.append(item.dictify())
 
     queue = sorted(queue, key=lambda x: (x['listened'], -1*x['dateQueued']))
     return jsonify({"queue":{"items":queue}})
 
-@app.route('/<user_name>/queue', methods=['DELETE'])
-def delete_queue_item(user_name):
+@app.route('/<user_name>/queue/<item_id>', methods=['DELETE'])
+def delete_queue_item(user_name, item_id):
     access_token = request.values['accessToken']
-    item_type = request.values['type']
-    item_id = request.values['itemId']
     user = get_user(user_name)
 
     if not user.access_token == access_token:
         app.logger.warning("invalid accessTokenfor user %s" % user_name)
-
         return {'message':'invalid accessToken'}, 400
 
-    if item_type == 'song':
-        song = db.session.query(SongItem)\
-        .filter(SongItem.user_id == user.id)\
-        .filter(SongItem.id == item_id).one()
-        db.session.remove(song)
-    if item_type == 'artist':
-        artist = db.session.query(ArtistItem)\
-        .filter(ArtistItem.user_id == user.id)\
-        .filter(ArtistItem.id == item_id).one()
-        db.session.remove(artist)
-    if item_type == 'note':
-        note = db.session.query(NoteItem)\
-        .filter(NoteItem.user_id == user.id)\
-        .filter(NoteItem.id == item_id).one()
-        db.session.remove(note)
+    item = db.session.query(QueueItem)\
+        .filter(QueueItem.user_id == user.id)\
+        .filter(QueueItem.id == item_id).one()
 
+    db.session.delete(item.get_item())
+    db.session.delete(item)
     db.session.commit()
 
-@app.route('/<user_name>/queue', methods=['PUT'])
-def mark_listened(user_name):
+    return jsonify({'status': 'OK'})
+
+@app.route('/<user_name>/queue/<item_id>', methods=['PUT'])
+def mark_listened(user_name, item_id):
     access_token = request.values['accessToken']
-    item_type = request.values['type']
-    item_id = request.values['itemId']
     listened = True if request.values['listened'] == 'true' else False
     user = get_user(user_name)
 
@@ -162,26 +142,15 @@ def mark_listened(user_name):
         app.logger.warning("invalid accessTokenfor user %s" % user_name)
         return {'message':'invalid accessToken'}, 400
 
-    if item_type == 'song':
-        song = db.session.query(SongItem)\
-        .filter(SongItem.user_id == user.id)\
-        .filter(SongItem.id == item_id).one()
-        song.listened = listened
-        db.session.add(song)
-    if item_type == 'artist':
-        artist = db.session.query(ArtistItem)\
-        .filter(ArtistItem.user_id == user.id)\
-        .filter(ArtistItem.id == item_id).one()
-        artist.listened = listened
-        db.session.add(artist)
-    if item_type == 'note':
-        note = db.session.query(NoteItem)\
-        .filter(NoteItem.user_id == user.id)\
-        .filter(NoteItem.id == item_id).one()
-        note.listened = listened
-        db.session.add(note)
+    item = db.session.query(QueueItem)\
+        .filter(QueueItem.user_id == user.id)\
+        .filter(QueueItem.id == item_id).one()
 
+    item.listened = listened
+    db.session.add(item)
     db.session.commit()
+
+    return jsonify({'status': 'OK'})
 
 @app.route('/<user_name>/queue', methods=['POST'])
 def enqueue_item(user_name):
@@ -190,7 +159,6 @@ def enqueue_item(user_name):
     from_user_name = queue_item['fromUser']['userName']
     access_token = queue_item['fromUser']['accessToken']
     media = queue_item[queue_item['type']]
-    queue_item['dateQueued']=int(queue_item['dateQueued'])
 
     from_user = get_user(from_user_name)
     to_user = get_user(user_name)
@@ -209,8 +177,16 @@ def enqueue_item(user_name):
         app.logger.warning("users %s is not friends" % user_name)
         return jsonify({'message':'users are not friends'}), 400
 
+    spotify_url = get_spotify_link_for_song(media)
+    orm_urls = UrlsForItem(spotify_url=spotify_url)
+    orm_queue_item = QueueItem(user=to_user,queued_by_user=from_user,
+                        urls=orm_urls,
+                        listened=False,
+                        date_queued=calendar.timegm(datetime.datetime.utcnow().utctimetuple()))
+
+    db.session.add(orm_urls)
+
     if queue_item['type'] == 'song':
-        spotify_url = get_spotify_link_for_song(media)
         artist = media['artist']
         orm_artist = Artist(name=artist['name'],
                             small_image_link=artist['images']['small'],
@@ -220,42 +196,33 @@ def enqueue_item(user_name):
         album = media['album']
         orm_album = Album(name=album['name'])
 
-        orm_urls = UrlsForItem(spotify_url=spotify_url)
 
-        orm_song = SongItem(user=to_user,queued_by_user=from_user,
-                        urls=orm_urls,
-                        listened=queue_item['listened'], name=media['name'],
-                        date_queued=queue_item['dateQueued'],
-                        small_image_link=media['images']['small'],
+        orm_song = SongItem(name=media['name'],
+                            small_image_link=media['images']['small'],
                             medium_image_link=media['images']['medium'],
                             large_image_link=media['images']['large'])
 
         orm_song.artist = orm_artist
         orm_song.album = orm_album
+        orm_queue_item.song_item = [orm_song]
+        db.session.add(orm_queue_item)
         db.session.add(orm_song)
-        db.session.add(orm_urls)
         db.session.add(orm_album)
         db.session.add(orm_artist)
 
     elif queue_item['type'] == 'artist':
-        spotify_url = get_spotify_link_for_artist(media)
-        orm_urls = UrlsForItem(spotify_url=spotify_url)
-        orm_artist = ArtistItem(user=to_user,queued_by_user=from_user,
-                        urls=orm_urls,
-                        listened=queue_item['listened'], name=media['name'],
-                        date_queued=queue_item['dateQueued'],
-                        small_image_link=media['images']['small'],
+        orm_artist = ArtistItem(name=media['name'],
+                            small_image_link=media['images']['small'],
                             medium_image_link=media['images']['medium'],
                             large_image_link=media['images']['large'])
 
+        orm_queue_item.artist_item = [orm_artist]
         db.session.add(orm_artist)
-        db.session.add(orm_urls)
 
     elif queue_item['type'] == 'note':
-        orm_note = NoteItem(user=to_user,queued_by_user=from_user,
-                        listened=queue_item['listened'], text=media['text'],
-                        date_queued=datetime.datetime.utcnow())
+        orm_note = NoteItem(text=media['text'])
 
+        orm_queue_item.note_item = [orm_note]
         db.session.add(orm_note)
 
     db.session.commit()
@@ -302,7 +269,15 @@ def get_spotify_link_for_artist(artist):
     link = resp.json()['artists'][0]['href']
     return link
 
+def get_fb_friends(fb_id, access_token):
+    resp = requests.get("%s/%s/friends?limit=5000&access_token=%s" %
+                            (FB_API_URL, fb_id, access_token))
+    if 'data' not in resp.json():
+        return None
 
+    friends = resp.json()['data']
+    return friends
+    
 
 
 

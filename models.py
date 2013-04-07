@@ -68,12 +68,42 @@ class QueueItem(db.Model):
 
     listened = Column(Boolean)
 
+    def get_item(self):
+        found = False
+        item = None
+
+        if self.song_item:
+            if found:
+                raise Exception("QueueItem has more than 1 media")
+            found = True
+            item = song_item[0]
+
+        if self.note_item:
+            if found:
+                raise Exception("QueueItem has more than 1 media")
+            found = True
+            item = self.note_item[0]
+
+        if self.artist_item:
+            if found:
+                raise Exception("QueueItem has more than 1 media")
+            found = True
+            item = self.artist_item[0]
+
+        if self.album_item:
+            if found:
+                raise Exception("QueueItem has more than 1 media")
+            found = True
+            item = self.album_item[0]
+
+        return item
+
     def dictify(self):
         return {'itemId':self.id,
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
                 'urls':self.urls.dictify(),
-                'item':self.item.dictify(),
+                'item':self.get_item().dictify(),
                 'dateQueued':self.date_queued
         }
 
@@ -177,7 +207,9 @@ class AlbumItem(db.Model):
     __tablename__ = 'album_items'
 
     id = Column(Integer, ForeignKey('queue_items.id'), primary_key=True)
-    queue_item = relationship("QueueItem",  foreign_keys=[id], backref=backref('album_item', order_by=id))
+
+    queue_item = relationship("QueueItem",  foreign_keys=[id], backref=backref('album_item'))
+
 
     name = Column(String)
 
