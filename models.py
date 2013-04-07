@@ -71,39 +71,45 @@ class QueueItem(db.Model):
     def get_item(self):
         found = False
         item = None
+        item_type = None
 
         if self.song_item:
             if found:
                 raise Exception("QueueItem has more than 1 media")
             found = True
-            item = song_item[0]
+            item = self.song_item[0]
+            item_type = 'song'
 
         if self.note_item:
             if found:
                 raise Exception("QueueItem has more than 1 media")
             found = True
             item = self.note_item[0]
+            item_type = 'note'
 
         if self.artist_item:
             if found:
                 raise Exception("QueueItem has more than 1 media")
             found = True
             item = self.artist_item[0]
+            item_type = 'artist'
 
         if self.album_item:
             if found:
                 raise Exception("QueueItem has more than 1 media")
             found = True
             item = self.album_item[0]
+            item_type = 'album'
 
-        return item
+        return item_type, item
 
     def dictify(self):
+        item_type, item = self.get_item()
         return {'itemId':self.id,
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
                 'urls':self.urls.dictify(),
-                'item':self.get_item().dictify(),
+                item_type: item.dictify(),
                 'dateQueued':self.date_queued
         }
 

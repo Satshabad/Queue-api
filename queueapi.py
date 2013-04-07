@@ -122,12 +122,13 @@ def delete_queue_item(user_name, item_id):
         app.logger.warning("invalid accessTokenfor user %s" % user_name)
         return {'message':'invalid accessToken'}, 400
 
-    item = db.session.query(QueueItem)\
+    queue_item = db.session.query(QueueItem)\
         .filter(QueueItem.user_id == user.id)\
         .filter(QueueItem.id == item_id).one()
 
-    db.session.delete(item.get_item())
+    item_type, item = queue_item.get_item()
     db.session.delete(item)
+    db.session.delete(queue_item)
     db.session.commit()
 
     return jsonify({'status': 'OK'})
