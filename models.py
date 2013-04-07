@@ -4,6 +4,7 @@ import json
 from main import db
 
 ForeignKey = db.ForeignKey
+ForeignKeyConstraint = db.ForeignKeyConstraint
 relationship = db.relationship
 backref = db.backref
 Column = db.Column
@@ -42,34 +43,55 @@ class Friend(db.Model):
 
     def dictify(self):
         return {'name':self.fullname,
-                'fbId':self.fb_id }
+                 'fbId':self.fb_id }
 
 
     def __repr__(self):
         return "<Friend('%s', '%s')", (self.fullname, self.user)
 
-class SongItem(db.Model):
-    __tablename__ = 'song_items'
+class QueueItem(db.Model):
+    __tablename__ = 'queue_items'
 
     id = Column(Integer, primary_key=True)
-    listened = Column(Boolean)
-    spotifylink = Column(String)
     date_queued = Column(Integer)
 
     user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", foreign_keys=[user_id], backref=backref('song_items', order_by=date_queued))
+    user = relationship("User", foreign_keys=[user_id], 
+                        backref=backref('queue_items', order_by=date_queued))
 
     queued_by_id = Column(Integer, ForeignKey('users.id'))
-    queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_song_items', order_by=date_queued))
+    queued_by_user = relationship("User", foreign_keys=[queued_by_id], 
+                                  backref=backref('sent_queue_items', order_by=date_queued))
+
+    urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
+    urls = relationship("UrlsForItem", foreign_keys=[urls_id], backref=backref('queue_item', order_by=id))
+
+    listened = Column(Boolean)
+
+    def dictify(self):
+        return {'itemId':self.id,
+                'listened': 1 if self.listened else 0,
+                'fromUser': self.queued_by_user.dictify(),
+                'urls':self.urls.dictify(),
+                'item':self.item.dictify(),
+                'dateQueued':self.date_queued
+        }
+
+    def __repr__(self):
+        return "<QueueItem('%s', '%s', '%s', '%s')" % (self.id, self.user, self.queued_by_user, self.listened)
+
+    
+class SongItem(db.Model):
+    __tablename__ = 'song_items'
+
+    id = Column(Integer, ForeignKey('queue_items.id'), primary_key=True)
+    queue_item = relationship("QueueItem",  foreign_keys=[id], backref=backref('song_item'))
 
     artist_id = Column(Integer, ForeignKey('artists.id'))
     artist = relationship("Artist", backref=backref('songs', order_by=id))
 
     album_id = Column(Integer, ForeignKey('albums.id'))
     album = relationship("Album", backref=backref('songs', order_by=id))
-
-    urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
-    urls = relationship("UrlsForItem", foreign_keys=[urls_id], backref=backref('song_item', order_by=date_queued))
 
     name = Column(String)
 
@@ -78,11 +100,7 @@ class SongItem(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'itemId':self.id,
-                'type': 'song',
-                'listened': 1 if self.listened else 0,
-                'fromUser': self.queued_by_user.dictify(),
-                'urls':self.urls.dictify(),
+        return {'type': 'song',
                 'song':{
                     'artist': self.artist.dictify(),
                     'album': self.album.dictify(),
@@ -92,42 +110,27 @@ class SongItem(db.Model):
                         'medium':self.medium_image_link,
                         'large':self.large_image_link
                      }
-                },
-                'dateQueued':self.date_queued
-              }
+                }
+        }
 
 
     def __repr__(self):
-        return "<Song('%s','%s', '%s', '%s')>" % (self.name, self.artist, self.album, self.user_id)
+        return "<Song('%s','%s', '%s', '%s')>" % (self.id, self.name, self.artist, self.album)
 
 class NoteItem(db.Model):
     __tablename__ = 'note_items'
 
-    id = Column(Integer, primary_key=True)
-    listened = Column(Boolean)
-    spotifylink = Column(String)
-    date_queued = Column(Integer)
+    id = Column(Integer, ForeignKey('queue_items.id'), primary_key=True)
+    queue_item = relationship("QueueItem",  foreign_keys=[id], backref=backref('note_item'))
 
     small_image_link = Column(String)
     medium_image_link = Column(String)
     large_image_link = Column(String)
 
-
-    user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", foreign_keys=[user_id], backref=backref('note_items', order_by=date_queued))
-
-    queued_by_id = Column(Integer, ForeignKey('users.id'))
-    queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_note_items', order_by=date_queued))
-
-    urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
-    urls = relationship("UrlsForItem", foreign_keys=[urls_id], backref=backref('note_item', order_by=date_queued))
-
-
     text = Column(String)
 
     def dictify(self):
-        return {'itemId':self.id,
-                'type':'note',
+        return {'type':'note',
                 'note':{
                     'text':self.text,
                     'images':{
@@ -135,33 +138,18 @@ class NoteItem(db.Model):
                         'medium':self.medium_image_link,
                         'large':self.large_image_link
                      }
-                },
-                'urls':self.urls.dictify(),
-                'listened': 1 if self.listened else 0,
-                'fromUser': self.queued_by_user.dictify(),
-                'dateQueued':self.date_queued
+                }
         }
 
 
     def __repr__(self):
-        return "<NoteItem('%s','%s', '%s')>" % (self.name, self.id, self.user)
+        return "<NoteItem('%s','%s')>" % (self.id, self.text)
 
 class ArtistItem(db.Model):
     __tablename__ = 'artist_items'
 
-    id = Column(Integer, primary_key=True)
-    listened = Column(Boolean)
-    spotifylink = Column(String)
-    date_queued = Column(Integer)
-
-    user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", foreign_keys=[user_id], backref=backref('artist_items', order_by=date_queued))
-
-    queued_by_id = Column(Integer, ForeignKey('users.id'))
-    queued_by_user = relationship("User", foreign_keys=[queued_by_id], backref=backref('sent_artist_items', order_by=date_queued))
-
-    urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
-    urls = relationship("UrlsForItem", foreign_keys=[urls_id], backref=backref('artist_item', order_by=date_queued))
+    id = Column(Integer, ForeignKey('queue_items.id'), primary_key=True)
+    queue_item = relationship("QueueItem",  foreign_keys=[id], backref=backref('artist_item'))
 
     name = Column(String)
 
@@ -170,12 +158,7 @@ class ArtistItem(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'itemId':self.id,
-                'type':'artist',
-                'listened': 1 if self.listened else 0,
-                'fromUser': self.queued_by_user.dictify(),
-                'dateQueued':self.date_queued,
-                'urls':self.urls.dictify(),
+        return {'type':'artist',
                 'artist':{
                     'name':self.name,
                     'images':{
@@ -188,7 +171,37 @@ class ArtistItem(db.Model):
 
 
     def __repr__(self):
-        return "<ArtistItem('%s','%s', '%s')>" % (self.name, self.id, self.user)
+        return "<ArtistItem('%s','%s')>" % (self.id, self.name)
+
+class AlbumItem(db.Model):
+    __tablename__ = 'album_items'
+
+    id = Column(Integer, ForeignKey('queue_items.id'), primary_key=True)
+    queue_item = relationship("QueueItem",  foreign_keys=[id], backref=backref('album_item', order_by=id))
+
+    name = Column(String)
+
+    small_image_link = Column(String)
+    medium_image_link = Column(String)
+    large_image_link = Column(String)
+
+    def dictify(self):
+        return {'type':'album',
+                'album':{
+                    'name':self.name,
+                    'images':{
+                        'small':self.small_image_link,
+                        'medium':self.medium_image_link,
+                        'large':self.large_image_link
+                    }
+                }
+        }
+
+
+    def __repr__(self):
+        return "<AlbumItem('%s','%s', '%s')>" % (self.id, self.name)
+
+
 
 class Artist(db.Model):
     __tablename__ = 'artists'
