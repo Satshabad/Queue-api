@@ -109,6 +109,7 @@ class QueueItem(db.Model):
                 'listened': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
                 'urls':self.urls.dictify(),
+                'type': item_type,
                 item_type: item.dictify(),
                 'dateQueued':self.date_queued
         }
@@ -136,17 +137,15 @@ class SongItem(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'type': 'song',
-                'song':{
-                    'artist': self.artist.dictify(),
-                    'album': self.album.dictify(),
-                    'name': self.name,
-                    'images':{
-                        'small':self.small_image_link,
-                        'medium':self.medium_image_link,
-                        'large':self.large_image_link
-                     }
-                }
+        return {
+                'artist': self.artist.dictify(),
+                'album': self.album.dictify(),
+                'name': self.name,
+                'images':{
+                    'small':self.small_image_link,
+                    'medium':self.medium_image_link,
+                    'large':self.large_image_link
+                 }
         }
 
 
@@ -166,15 +165,13 @@ class NoteItem(db.Model):
     text = Column(String)
 
     def dictify(self):
-        return {'type':'note',
-                'note':{
-                    'text':self.text,
-                    'images':{
-                        'small':self.small_image_link,
-                        'medium':self.medium_image_link,
-                        'large':self.large_image_link
-                     }
-                }
+        return {
+                'text':self.text,
+                'images':{
+                    'small':self.small_image_link,
+                    'medium':self.medium_image_link,
+                    'large':self.large_image_link
+                 }
         }
 
 
@@ -194,14 +191,12 @@ class ArtistItem(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'type':'artist',
-                'artist':{
-                    'name':self.name,
-                    'images':{
-                        'small':self.small_image_link,
-                        'medium':self.medium_image_link,
-                        'large':self.large_image_link
-                    }
+        return {
+                'name':self.name,
+                'images':{
+                    'small':self.small_image_link,
+                    'medium':self.medium_image_link,
+                    'large':self.large_image_link
                 }
         }
 
@@ -224,14 +219,12 @@ class AlbumItem(db.Model):
     large_image_link = Column(String)
 
     def dictify(self):
-        return {'type':'album',
-                'album':{
-                    'name':self.name,
-                    'images':{
-                        'small':self.small_image_link,
-                        'medium':self.medium_image_link,
-                        'large':self.large_image_link
-                    }
+        return {
+                'name':self.name,
+                'images':{
+                    'small':self.small_image_link,
+                    'medium':self.medium_image_link,
+                    'large':self.large_image_link
                 }
         }
 
