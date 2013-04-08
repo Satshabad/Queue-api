@@ -2,8 +2,10 @@ import datetime
 import json
 import calendar
 import os
+from functools import wraps
 
 from flask import Flask, request, jsonify
+from flask import redirect, request, current_app
 
 import requests
 
@@ -17,6 +19,18 @@ SP_API_URL = app.config['SP_API_URL']
 LF_API_URL = app.config['LF_API_URL']
 LF_API_KEY = app.config['LF_API_KEY']
 FB_API_URL = app.config['FB_API_URL']
+ 
+def support_jsonp(f):
+    """Wraps JSONified output for JSONP"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        callback = request.args.get('callback', False)
+        if callback:
+            content = str(callback) + '(' + str(f().data) + ')'
+            return current_app.response_class(content, mimetype='application/json')
+        else:
+            return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/db/destroy')
 def destroy_db():
@@ -31,6 +45,7 @@ def create_db():
     return 'so it is'
 
 @app.route('/search/<search_text>', methods=['GET'])
+@support_jsonp
 def search(search_text):
     search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
     track_results = requests.get(search_url %
@@ -46,16 +61,19 @@ def search(search_text):
     return jsonify(results)
 
 @app.route('/<user_name>/listens', methods=['GET'])
+@support_jsonp
 def get_listens(user_name):
     data = requests.get("%smethod=user.getrecenttracks&user=%s&api_key=%sformat=json&extended=1"
                         % (LF_API_URL, user_name, LF_API_KEY)).json()
     return jsonify(fix_lastfm_listens_data(data))
 
 @app.route('/', methods=['GET'])
+@support_jsonp
 def home():
     return jsonify({"hello":"there"})
 
 @app.route('/<user_name>/friends', methods=['GET'])
+@support_jsonp
 def get_friends(user_name):
     args = request.values
     access_token = args['accessToken']
@@ -71,6 +89,7 @@ def get_friends(user_name):
     return jsonify(friends)
 
 @app.route('/<user_name>', methods=['POST'])
+@support_jsonp
 def make_user(user_name):
 
     if get_user(user_name):
@@ -96,6 +115,7 @@ def make_user(user_name):
     return jsonify({"status":"OK"})
 
 @app.route('/<user_name>/queue', methods=['GET'])
+@support_jsonp
 def get_queue(user_name):
 
     user = get_user(user_name)
@@ -114,6 +134,7 @@ def get_queue(user_name):
     return jsonify({"queue":{"items":queue}})
 
 @app.route('/<user_name>/queue/<item_id>', methods=['DELETE'])
+@support_jsonp
 def delete_queue_item(user_name, item_id):
     access_token = request.values['accessToken']
     user = get_user(user_name)
@@ -134,6 +155,7 @@ def delete_queue_item(user_name, item_id):
     return jsonify({'status': 'OK'})
 
 @app.route('/<user_name>/queue/<item_id>', methods=['PUT'])
+@support_jsonp
 def mark_listened(user_name, item_id):
     access_token = request.values['accessToken']
     listened = True if request.values['listened'] == 'true' else False
@@ -154,6 +176,7 @@ def mark_listened(user_name, item_id):
     return jsonify({'status': 'OK'})
 
 @app.route('/<user_name>/queue', methods=['POST'])
+@support_jsonp
 def enqueue_item(user_name):
 
     queue_item = request.json
