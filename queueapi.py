@@ -308,6 +308,4 @@ def get_fb_friends(fb_id, access_token):
 
 
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
 
