@@ -241,8 +241,11 @@ def enqueue_item(user_id):
     if not is_friends(from_fb_id, to_fb_id, access_token):
         return jsonify({'message':'users are not friends'}), 400
 
-
-    spotify_url = get_spotify_link_for_song(media)
+    spotify_url = None
+    if queue_item['type'] == 'song':
+        spotify_url = get_spotify_link_for_song(media)
+    elif queue_item['type'] == 'artist':
+        spotify_url = get_spotify_link_for_artist(media)
     orm_urls = UrlsForItem(spotify_url=spotify_url)
     orm_queue_item = QueueItem(user=to_user,queued_by_user=from_user,
                         urls=orm_urls,
