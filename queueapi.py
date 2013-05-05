@@ -100,6 +100,8 @@ def get_friends(user_id):
 @support_jsonp
 def login():
     args = request.json
+
+
     access_token = args['accessToken']
     fb_id = args['fbId']
     
@@ -114,7 +116,7 @@ def login():
 
         db.session.add(user)
         db.session.commit()
-
+    
     if login_user(user):
         return jsonify(user.dictify())
     
@@ -294,9 +296,13 @@ def get_user(user_id):
     return db.session.query(User).get(user_id)
 
 def fb_user_is_valid(fb_id, access_token):
-    resp = requests.get("%s/%s/me?access_token=%s" % (FB_API_URL, fb_id, access_token))
+    resp = requests.get("%s/me?access_token=%s" % (FB_API_URL, access_token))
+    print "%s/%s/me?access_token=%s" % (FB_API_URL, fb_id, access_token)
 
     if resp.status_code != 200:
+        return False
+
+    if resp.json()['id'] != fb_id:
         return False
     
     return True
@@ -352,7 +358,7 @@ def get_fb_friends(fb_id, access_token):
     
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True)
+    app.run(host='0.0.0.0', debug=True, port=5000)
 
 
 
