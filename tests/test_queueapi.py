@@ -37,7 +37,7 @@ class HighLevelTests(unittest.TestCase):
 
     def login(self, full_name, fb_id):
         queueapi.fb_user_is_valid = MagicMock(return_value=True)
-        request_json = {'accessToken':'abc', 'fbId':fb_id, 'fullname':full_name, 'imageLink':'foo'}
+        request_json = {'accessToken':'abc', 'fbId':fb_id, 'fullName':full_name, 'imageLink':'foo'}
         resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
         return json.loads(resp.data)
 
@@ -59,7 +59,7 @@ class HighLevelTests(unittest.TestCase):
 
     def test_logout(self):
         queueapi.fb_user_is_valid = MagicMock(return_value=True)
-        request_json = {'accessToken':'abc', 'fbId':'456', 'fullname':'satshabad', 'imageLink':'foo'}
+        request_json = {'accessToken':'abc', 'fbId':'456', 'fullName':'satshabad', 'imageLink':'foo'}
         resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
 
         resp =  self.app.get('/logout')

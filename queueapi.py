@@ -110,7 +110,7 @@ def login():
 
     if not user:
         user = User(fb_id=fb_id, access_token=access_token,
-                fullname=args['fullname'], image_link=args['imageLink'])
+                fullname=args['fullName'], image_link=args['imageLink'])
 
         db.session.add(user)
         db.session.commit()
