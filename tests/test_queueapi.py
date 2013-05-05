@@ -18,56 +18,95 @@ QueueItem = models.QueueItem
 NoteItem = models.NoteItem
    
 
-class QueueAPITestCase(unittest.TestCase):
+class HighLevelTests(unittest.TestCase):
 
     def setUp(self):
         """Before each test, set up a blank database"""
 
-        self.db_fd, self.db_file = tempfile.mkstemp()
-        main.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///%s' % self.db_file
+        main.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
         main.app.config['TESTING'] = True
         self.app = main.app.test_client()
         self.db = SQLAlchemy(main.app)
         init_db.init_db()
 
-        queueapi.get_fb_friends =  MagicMock(return_value=[{'name':'bob', 'id':'123'}])
         queueapi.get_spotify_link_for_song =  MagicMock(return_value='dummylink')
 
     def tearDown(self):
-        os.close(self.db_fd)
-        os.unlink(self.db_file)
+        self.logout()
+        pass
 
-    def test_create_user(self):
-        request_json = {'accessToken':'abc', 'fbId':'456', 'fullname':'satshabad', 'imageLink':'foo'}
+    def login(self, full_name, fb_id):
+        queueapi.fb_user_is_valid = MagicMock(return_value=True)
+        request_json = {'accessToken':'abc', 'fbId':fb_id, 'fullname':full_name, 'imageLink':'foo'}
+        resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
+        return json.loads(resp.data)
 
-        resp = self.app.post('/satshabad', data=json.dumps(request_json), content_type='application/json')
+    def logout(self):
+        return self.app.get('/logout')
 
+    def test_login(self):
+        json_user = self.login('satshabad', '456')
         user = self.db.session.query(User).one()
 
-        self.assertEqual(user.uname, 'satshabad')
-        self.assertEqual(user.access_token, 'abc')
+        self.assertEqual(json_user['id'], user.id)
         self.assertEqual(user.fb_id, 456)
         self.assertEqual(user.fullname, 'satshabad')
         self.assertEqual(user.image_link, 'foo')
 
-        friend = self.db.session.query(Friend).one()
+    def test_logout_when_not_logged_in(self):
+        resp =  self.app.get('/logout')
+        self.assertEqual(resp.status_code, 401)
 
-        self.assertEqual(friend.user.uname, 'satshabad')
-        self.assertEqual(friend.fb_id, 123)
+    def test_logout(self):
+        queueapi.fb_user_is_valid = MagicMock(return_value=True)
+        request_json = {'accessToken':'abc', 'fbId':'456', 'fullname':'satshabad', 'imageLink':'foo'}
+        resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
+
+        resp =  self.app.get('/logout')
+
+        resp =  self.app.get('/logout')
+        self.assertEqual(resp.status_code, 401)
+
+
+    def test_try_to_post_to_bad_user(self):
+        json_user = self.login('satshabad', '456')
+
+        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+        
+        resp = self.app.post('user/%s/queue' % 4,  data=json.dumps(item_json), content_type='application/json')
+
+        self.assertEqual(resp.status_code, 400)
+
+
+    def test_try_to_make_unauthorized_post(self):
+        json_user_old = self.login('satshabad', '456')
+        resp = self.logout()
+        json_user = self.login('fateh', '123')
+
+        item_json = {'fromUser':{'userId':json_user_old['id'],'accessToken':'abc'},
+                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+        
+        resp = self.app.post('user/%s/queue' % json_user['id'],  data=json.dumps(item_json),
+                                content_type='application/json')
+
+        self.assertEqual(resp.status_code, 403)
+
 
     def test_add_item_to_queue(self):
-        user_json = {'accessToken':'abc', 'fbId':'456', 'fullname':'satshabad', 'imageLink':'foo'}
+        json_user = self.login('satshabad', '456')
 
-        self.app.post('/satshabad', data=json.dumps(user_json), content_type='application/json')
+        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
-        item_json = {'fromUser':{'userName':'satshabad','accessToken':'abc'}, 'type':'note', 'note':{'text':'blah'}}
 
-        self.app.post('/satshabad/queue', data=json.dumps(item_json), content_type='application/json')
+        queueapi.is_friends = MagicMock(return_value=True)
+        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
 
         queue_item = self.db.session.query(QueueItem).one()
 
-        self.assertEqual(queue_item.queued_by_user.uname, 'satshabad')
-        self.assertEqual(queue_item.user.uname, 'satshabad')
+        self.assertEqual(queue_item.queued_by_user.id, json_user['id'])
+        self.assertEqual(queue_item.user.id, json_user['id'])
         self.assertEqual(queue_item.listened, False)
 
         note_item = self.db.session.query(NoteItem).one()
@@ -75,62 +114,58 @@ class QueueAPITestCase(unittest.TestCase):
         self.assertEqual(queue_item.id, note_item.id)
 
     def test_get_queue(self):
-        user_json = {'accessToken':'abc', 'fbId':'456', 'fullname':'satshabad', 'imageLink':'foo'}
+        json_user = self.login('satshabad', '456')
 
-        self.app.post('/satshabad', data=json.dumps(user_json), content_type='application/json')
+        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
-        item_json = {'fromUser':{'userName':'satshabad','accessToken':'abc'}, 'type':'note', 'note':{'text':'blah'}}
+        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
 
-        self.app.post('/satshabad/queue', data=json.dumps(item_json), content_type='application/json')
-
-        resp = self.app.get('/satshabad/queue')
+        resp = self.app.get('user/%s/queue' % json_user['id'])
     
         self.assertIn("queue", resp.data)
         self.assertIn("items", resp.data)
         self.assertIn("blah", resp.data)
-
          
 
     def test_delete_item_from_queue(self):
-        user_json = {'accessToken':'abc', 'fbId':'456', 'fullname':'satshabad', 'imageLink':'foo'}
+        json_user = self.login('satshabad', '456')
 
-        self.app.post('/satshabad', data=json.dumps(user_json), content_type='application/json')
+        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
-        item_json = {'fromUser':{'userName':'satshabad','accessToken':'abc'}, 'type':'note', 'note':{'text':'blah'}}
+        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
 
-        self.app.post('/satshabad/queue', data=json.dumps(item_json), content_type='application/json')
-
-        resp = self.app.get('/satshabad/queue')
+        resp = self.app.get('user/%s/queue' % json_user['id'])
 
         null = None
-
-        rv = json.loads(resp.data)
+        queue_items = json.loads(resp.data)
         
-        item_id = rv['queue']['items'][0]['itemId']
+        item_id = queue_items['queue']['items'][0]['itemId']
     
-        resp = self.app.delete('/satshabad/queue/%s?accessToken=abc' % item_id)
+        resp = self.app.delete('user/%s/queue/%s' % (json_user['id'], item_id))
 
         self.assertEqual(self.db.session.query(QueueItem).all(), [])
         self.assertEqual(self.db.session.query(NoteItem).all(), [])
 
     def test_mark_item_listened(self):
-        user_json = {'accessToken':'abc', 'fbId':'456', 'fullname':'satshabad', 'imageLink':'foo'}
+        json_user = self.login('satshabad', '456')
 
-        self.app.post('/satshabad', data=json.dumps(user_json), content_type='application/json')
+        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
-        item_json = {'fromUser':{'userName':'satshabad','accessToken':'abc'}, 'type':'note', 'note':{'text':'blah'}}
-
-        self.app.post('/satshabad/queue', data=json.dumps(item_json), content_type='application/json')
-
-        resp = self.app.get('/satshabad/queue')
+        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
+        resp = self.app.get('user/%s/queue' % json_user['id'])
 
         null = None
-
-        rv = json.loads(resp.data)
+        queue_items = json.loads(resp.data)
         
-        item_id = rv['queue']['items'][0]['itemId']
-
-        resp = self.app.put('/satshabad/queue/%s?listened=true&accessToken=abc' % item_id)
+        item_id = queue_items['queue']['items'][0]['itemId']
+    
+        item_json['listened'] = 'true'
+ 
+        resp = self.app.put('user/%s/queue/%s' % (json_user['id'], item_id),
+                            data=json.dumps(item_json), content_type='application/json')
 
         self.assertEqual(self.db.session.query(QueueItem).one().listened, True)
 

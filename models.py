@@ -19,18 +19,31 @@ class User(db.Model):
 
     id = Column(Integer, primary_key=True)
     fb_id = Column(Integer)
-    uname = Column(String)
+    lastfm_name = Column(String)
     fullname = Column(String)
     image_link = Column(String)
     access_token = Column(String)
 
+    def is_authenticated(self):
+       return True 
+
+    def is_active(self):
+        return True
+
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return unicode(self.id)
+
     def dictify(self):
-        return {'userName':self.uname,
+        return {'id':self.id,
+                'facebookId':self.fb_id,
                 'fullName':self.fullname,
                 'image':self.image_link}
 
     def __repr__(self):
-        return "<User('%s','%s', '%s')>" % (self.uname, self.fullname, self.image_link)
+        return "<User('%s','%s', '%s')>" % (self.id, self.fullname, self.image_link)
 
 class Friend(db.Model):
     __tablename__ = 'friends'
