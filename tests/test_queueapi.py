@@ -48,7 +48,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
         user = self.db.session.query(User).one()
 
-        self.assertEqual(json_user['id'], user.id)
+        self.assertEqual(json_user['userId'], user.id)
         self.assertEqual(user.fb_id, 456)
         self.assertEqual(user.fullname, 'satshabad')
         self.assertEqual(user.image_link, 'foo')
@@ -71,7 +71,7 @@ class HighLevelTests(unittest.TestCase):
     def test_try_to_post_to_bad_user(self):
         json_user = self.login('satshabad', '456')
 
-        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+        item_json = {'fromUser':{'userId':json_user['userId'],'accessToken':'abc'},
                         'type':'note', 'listened':'false', 'note':{'text':'blah'}}
         
         resp = self.app.post('user/%s/queue' % 4,  data=json.dumps(item_json), content_type='application/json')
@@ -84,10 +84,10 @@ class HighLevelTests(unittest.TestCase):
         resp = self.logout()
         json_user = self.login('fateh', '123')
 
-        item_json = {'fromUser':{'userId':json_user_old['id'],'accessToken':'abc'},
+        item_json = {'fromUser':{'userId':json_user_old['userId'],'accessToken':'abc'},
                         'type':'note', 'listened':'false', 'note':{'text':'blah'}}
         
-        resp = self.app.post('user/%s/queue' % json_user['id'],  data=json.dumps(item_json),
+        resp = self.app.post('user/%s/queue' % json_user['userId'],  data=json.dumps(item_json),
                                 content_type='application/json')
 
         self.assertEqual(resp.status_code, 403)
@@ -96,17 +96,17 @@ class HighLevelTests(unittest.TestCase):
     def test_add_item_to_queue(self):
         json_user = self.login('satshabad', '456')
 
-        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+        item_json = {'fromUser':{'userId':json_user['userId'],'accessToken':'abc'},
                         'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
 
         queueapi.is_friends = MagicMock(return_value=True)
-        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
+        self.app.post('user/%s/queue' % json_user['userId'], data=json.dumps(item_json), content_type='application/json')
 
         queue_item = self.db.session.query(QueueItem).one()
 
-        self.assertEqual(queue_item.queued_by_user.id, json_user['id'])
-        self.assertEqual(queue_item.user.id, json_user['id'])
+        self.assertEqual(queue_item.queued_by_user.id, json_user['userId'])
+        self.assertEqual(queue_item.user.id, json_user['userId'])
         self.assertEqual(queue_item.listened, False)
 
         note_item = self.db.session.query(NoteItem).one()
@@ -116,12 +116,12 @@ class HighLevelTests(unittest.TestCase):
     def test_get_queue(self):
         json_user = self.login('satshabad', '456')
 
-        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+        item_json = {'fromUser':{'userId':json_user['userId'],'accessToken':'abc'},
                         'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
-        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
+        self.app.post('user/%s/queue' % json_user['userId'], data=json.dumps(item_json), content_type='application/json')
 
-        resp = self.app.get('user/%s/queue' % json_user['id'])
+        resp = self.app.get('user/%s/queue' % json_user['userId'])
     
         self.assertIn("queue", resp.data)
         self.assertIn("items", resp.data)
@@ -131,19 +131,19 @@ class HighLevelTests(unittest.TestCase):
     def test_delete_item_from_queue(self):
         json_user = self.login('satshabad', '456')
 
-        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+        item_json = {'fromUser':{'userId':json_user['userId'],'accessToken':'abc'},
                         'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
-        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
+        self.app.post('user/%s/queue' % json_user['userId'], data=json.dumps(item_json), content_type='application/json')
 
-        resp = self.app.get('user/%s/queue' % json_user['id'])
+        resp = self.app.get('user/%s/queue' % json_user['userId'])
 
         null = None
         queue_items = json.loads(resp.data)
         
         item_id = queue_items['queue']['items'][0]['itemId']
     
-        resp = self.app.delete('user/%s/queue/%s' % (json_user['id'], item_id))
+        resp = self.app.delete('user/%s/queue/%s' % (json_user['userId'], item_id))
 
         self.assertEqual(self.db.session.query(QueueItem).all(), [])
         self.assertEqual(self.db.session.query(NoteItem).all(), [])
@@ -151,11 +151,11 @@ class HighLevelTests(unittest.TestCase):
     def test_mark_item_listened(self):
         json_user = self.login('satshabad', '456')
 
-        item_json = {'fromUser':{'userId':json_user['id'],'accessToken':'abc'},
+        item_json = {'fromUser':{'userId':json_user['userId'],'accessToken':'abc'},
                         'type':'note', 'listened':'false', 'note':{'text':'blah'}}
 
-        self.app.post('user/%s/queue' % json_user['id'], data=json.dumps(item_json), content_type='application/json')
-        resp = self.app.get('user/%s/queue' % json_user['id'])
+        self.app.post('user/%s/queue' % json_user['userId'], data=json.dumps(item_json), content_type='application/json')
+        resp = self.app.get('user/%s/queue' % json_user['userId'])
 
         null = None
         queue_items = json.loads(resp.data)
@@ -164,7 +164,7 @@ class HighLevelTests(unittest.TestCase):
     
         item_json['listened'] = 'true'
  
-        resp = self.app.put('user/%s/queue/%s' % (json_user['id'], item_id),
+        resp = self.app.put('user/%s/queue/%s' % (json_user['userId'], item_id),
                             data=json.dumps(item_json), content_type='application/json')
 
         self.assertEqual(self.db.session.query(QueueItem).one().listened, True)

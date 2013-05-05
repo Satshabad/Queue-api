@@ -37,7 +37,7 @@ class User(db.Model):
         return unicode(self.id)
 
     def dictify(self):
-        return {'id':self.id,
+        return {'userId':self.id,
                 'facebookId':self.fb_id,
                 'fullName':self.fullname,
                 'image':self.image_link}
