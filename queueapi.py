@@ -285,7 +285,10 @@ def enqueue_item(user_id):
         db.session.add_all([orm_artist, orm_queue_item])
 
     elif queue_item['type'] == 'note':
-        orm_note = NoteItem(text=media['text'])
+        orm_note = NoteItem(text=media['text']
+                            small_image_link=media['images']['small'],
+                            medium_image_link=media['images']['medium'],
+                            large_image_link=media['images']['large'])
 
         orm_queue_item.note_item = [orm_note]
         db.session.add_all([orm_note, orm_queue_item])
