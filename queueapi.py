@@ -312,7 +312,7 @@ def get_user_by_fbid(fb_id):
 
 def no_such_user(user_id):
 
-    return jsonify({"message":"no such user %s" % user_id}), 400
+    return jsonify({"message":"no such user %s" % user_id}), 404
 
 def is_friends(user_id_1, user_id_2, access_token):
     if user_id_1 == user_id_2:

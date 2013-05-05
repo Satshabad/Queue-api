@@ -79,7 +79,7 @@ class HighLevelTests(unittest.TestCase):
         
         resp = self.app.post('user/%s/queue' % 4,  data=json.dumps(item_json), content_type='application/json')
 
-        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(resp.status_code, 404)
 
 
     def test_try_to_make_unauthorized_post(self):
