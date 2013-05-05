@@ -75,8 +75,16 @@ def search(search_text):
 @app.route('/user/<user_id>/listens', methods=['GET'])
 @support_jsonp
 def get_listens(user_id):
+    user = get_user(user_id)
+    
+    if not user:
+        return '', 404
+
+    lastfm_name = user.lastfm_name
+    if not lastfm_name:
+        return '', 404
     data = requests.get("%smethod=user.getrecenttracks&user=%s&api_key=%sformat=json&extended=1"
-                        % (LF_API_URL, user_id, LF_API_KEY)).json()
+                        % (LF_API_URL, lastfm_name, LF_API_KEY)).json()
     return jsonify(fix_lastfm_listens_data(data))
 
 @app.route('/', methods=['GET'])
@@ -95,6 +103,28 @@ def get_friends(user_id):
     raise NotImplementedError
 
     return jsonify({})
+
+@app.route('/user/<user_id>', methods=['PUT'])
+@support_jsonp
+@login_required
+def change_user(user_id):
+    args = request.json
+    lastfm_name = args['lastFMUsername']
+
+    user = get_user(user_id)
+
+    if user != current_user:
+        return '', 403
+
+    if not user:
+        return '', 404
+
+    user.lastfm_name = lastfm_name
+
+    db.session.add(user)
+    db.session.commit()
+    return jsonify(user.dictify())
+
 
 @app.route('/login', methods=['POST'])
 @support_jsonp

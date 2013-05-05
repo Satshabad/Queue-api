@@ -186,5 +186,13 @@ class HighLevelTests(unittest.TestCase):
 
         self.assertEqual(self.db.session.query(QueueItem).one().listened, True)
 
+    def test_add_lastfm_user_name(self):
+        json_user = self.login('satshabad', '456')
+
+        data = {'lastFMUsername':'satshabad'}
+        self.app.put('user/%s' % json_user['userId'], data=json.dumps(data), content_type='application/json')
+
+        self.assertEqual(self.db.session.query(User).one().lastfm_name, 'satshabad')
+
 if __name__ == '__main__':
     unittest.main()
