@@ -53,6 +53,9 @@ class HighLevelTests(unittest.TestCase):
         self.assertEqual(user.fullname, 'satshabad')
         self.assertEqual(user.image_link, 'foo')
 
+        self.assertEqual(self.db.session.query(User).one().fullname, 'satshabad')
+        self.assertEqual(self.db.session.query(User).one().fb_id,456)
+
     def test_logout_when_not_logged_in(self):
         resp =  self.app.get('/logout')
         self.assertEqual(resp.status_code, 401)
@@ -147,6 +150,20 @@ class HighLevelTests(unittest.TestCase):
 
         self.assertEqual(self.db.session.query(QueueItem).all(), [])
         self.assertEqual(self.db.session.query(NoteItem).all(), [])
+
+    def test_additem_to_queue_by_fbid(self):
+        json_user = self.login('satshabad', '456')
+
+        item_json = {'fromUser':{'userId':json_user['userId'],'accessToken':'abc'},
+                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+
+        self.app.post('fbuser/%s/queue' % 123, data=json.dumps(item_json), content_type='application/json')
+
+        queue_item = self.db.session.query(QueueItem).one()
+
+        self.assertEqual(queue_item.queued_by_user.id, json_user['userId'])
+        self.assertEqual(queue_item.user.fb_id, 123)
+        self.assertEqual(self.db.session.query(User).filter(User.fb_id==456).one().fb_id, 456)
 
     def test_mark_item_listened(self):
         json_user = self.login('satshabad', '456')

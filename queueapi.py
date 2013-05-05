@@ -179,6 +179,38 @@ def change_queue_item(user_id, item_id):
 
     return jsonify({'status': 'OK'})
 
+@app.route('/fbuser/<fb_id>/queue', methods=['POST'])
+@support_jsonp
+@login_required
+def enqueue_item_by_fbid(fb_id):
+
+    queue_item = request.json
+    from_user_id = queue_item['fromUser']['userId']
+    access_token = queue_item['fromUser']['accessToken']
+    from_user = get_user(from_user_id)
+    to_user = get_user_by_fbid(fb_id)
+
+    if from_user != current_user:
+        return '', 403
+
+    if not from_user:
+        return no_such_user(from_user)
+
+    from_fb_id = from_user.fb_id
+
+    if not is_friends(from_fb_id, fb_id, access_token):
+        return jsonify({'message':'users are not friends'}), 400
+
+    if not to_user:
+        to_user = User(fb_id=fb_id, access_token=None,
+                fullname=None, image_link=None)
+
+        db.session.add(to_user)
+        db.session.commit()
+
+    return enqueue_item(to_user.id)
+
+       
 @app.route('/user/<user_id>/queue', methods=['POST'])
 @support_jsonp
 @login_required
