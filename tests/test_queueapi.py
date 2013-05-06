@@ -190,8 +190,8 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
 
         data = {'lastFMUsername':'satshabad'}
-        self.app.put('user/%s' % json_user['userId'], data=json.dumps(data), content_type='application/json')
-
+        resp = self.app.put('user/%s' % json_user['userId'], data=json.dumps(data), content_type='application/json')
+        self.assertEqual(json.loads(resp.data)['userId'], json_user['userId'])
         self.assertEqual(self.db.session.query(User).one().lastfm_name, 'satshabad')
 
 if __name__ == '__main__':
