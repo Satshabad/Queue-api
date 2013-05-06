@@ -147,7 +147,7 @@ def login():
         db.session.add(user)
         db.session.commit()
     
-    if login_user(user):
+    if login_user(user, remember=True):
         return jsonify(user.dictify())
     
     return jsonify({'message': 'could not log in'}), 400
