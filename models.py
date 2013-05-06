@@ -40,7 +40,8 @@ class User(db.Model):
         return {'userId':self.id,
                 'facebookId':self.fb_id,
                 'fullName':self.fullname,
-                'image':self.image_link}
+                'image':self.image_link,
+                'lastFMUsername':self.lastfm_name}
 
     def __repr__(self):
         return "<User('%s','%s', '%s')>" % (self.id, self.fullname, self.image_link)
