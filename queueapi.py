@@ -4,7 +4,7 @@ import calendar
 import os
 from functools import wraps
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask import redirect, request, current_app
 
 from flask.ext.login import login_required, login_user, logout_user, current_user
@@ -148,6 +148,7 @@ def login():
         db.session.commit()
     
     if login_user(user, remember=True):
+        session.permanent = True
         return jsonify(user.dictify())
     
     return jsonify({'message': 'could not log in'}), 400

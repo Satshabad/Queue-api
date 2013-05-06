@@ -1,3 +1,4 @@
+import datetime
 from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
 from raven.contrib.flask import Sentry
@@ -11,6 +12,7 @@ FB_API_URL = "https://graph.facebook.com"
 DATABASE_FILE = '/tmp/queue.db'
 SQLALCHEMY_DATABASE_URI = 'sqlite:///%s' % DATABASE_FILE
 SECRET_KEY = "yeah, not actually a secret"
+PERMANENT_SESSION_LIFETIME = datetime.timedelta(minutes=525949)
 login_manager = LoginManager()
 
 app = Flask(__name__)
