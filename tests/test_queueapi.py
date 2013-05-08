@@ -194,5 +194,13 @@ class HighLevelTests(unittest.TestCase):
         self.assertEqual(json.loads(resp.data)['userID'], json_user['userID'])
         self.assertEqual(self.db.session.query(User).one().lastfm_name, 'satshabad')
 
+    def test_return_404_for_bad_queue_item(self):
+        json_user = self.login('satshabad', '456')
+
+
+        resp = self.app.delete('user/%s/queue/1' % json_user['userID'])
+
+        self.assertEqual(resp.status_code, 404)
+
 if __name__ == '__main__':
     unittest.main()

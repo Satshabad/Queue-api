@@ -183,7 +183,12 @@ def delete_queue_item(user_id, item_id):
 
     queue_item = db.session.query(QueueItem)\
         .filter(QueueItem.user_id == user_id)\
-        .filter(QueueItem.id == item_id).one()
+        .filter(QueueItem.id == item_id)
+
+    if not list(queue_item):
+        return '', 404
+
+    queue_item = queue_item.one()
 
     item_type, item = queue_item.get_item()
     db.session.delete(item)
