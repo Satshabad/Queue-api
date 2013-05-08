@@ -218,7 +218,7 @@ def change_queue_item(user_id, item_id):
 def enqueue_item_by_fbid(fb_id):
 
     queue_item = request.json
-    from_user_id = queue_item['fromUser']['userId']
+    from_user_id = queue_item['fromUser']['userID']
     access_token = queue_item['fromUser']['accessToken']
     from_user = get_user(from_user_id)
     to_user = get_user_by_fbid(fb_id)
@@ -250,7 +250,7 @@ def enqueue_item_by_fbid(fb_id):
 def enqueue_item(user_id):
 
     queue_item = request.json
-    from_user_id = queue_item['fromUser']['userId']
+    from_user_id = queue_item['fromUser']['userID']
     access_token = queue_item['fromUser']['accessToken']
     media = queue_item[queue_item['type']]
 
