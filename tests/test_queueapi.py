@@ -6,6 +6,8 @@ import pprint
 import json
 import sys
 
+import requests
+
 from mock import patch, MagicMock
 
 from flask import Flask, request
@@ -15,6 +17,7 @@ from queue_app import main, models, init_db, queueapi
 User = models.User
 Friend = models.Friend
 QueueItem = models.QueueItem
+SongItem = models.SongItem
 NoteItem = models.NoteItem
    
 
@@ -30,6 +33,7 @@ class HighLevelTests(unittest.TestCase):
         init_db.init_db()
 
         queueapi.get_spotify_link_for_song =  MagicMock(return_value='dummylink')
+        queueapi.get_grooveshark_link=  MagicMock(return_value='dummylink')
 
     def tearDown(self):
         self.logout()
@@ -94,6 +98,26 @@ class HighLevelTests(unittest.TestCase):
                                 content_type='application/json')
 
         self.assertEqual(resp.status_code, 403)
+
+    def test_add_song_to_queue(self):
+        json_user = self.login('satshabad', '456')
+
+        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
+                        'type':'song', 'listened':'false', 'song':{'name':'Too Soon to Tell','images':{'small':"", 'medium':'', 'large':''}, 'artist':{'name':'Todd Snider', 'images':{'small':"", 'medium':'', 'large':''}}, 'album':{'name':'Agnostic Hymns & Stoner Fables'}}}
+
+
+        queueapi.is_friends = MagicMock(return_value=True)
+        self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
+
+        queue_item = self.db.session.query(QueueItem).one()
+
+        self.assertEqual(queue_item.queued_by_user.id, json_user['userID'])
+        self.assertEqual(queue_item.user.id, json_user['userID'])
+        self.assertEqual(queue_item.listened, False)
+
+        note_item = self.db.session.query(SongItem).one()
+
+        self.assertEqual(queue_item.id, note_item.id)
 
 
     def test_add_item_to_queue(self):

@@ -16,7 +16,8 @@ from main import app, db, login_manager
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
 from fixdata import fix_lastfm_listens_data, fix_image_data, fix_lf_track_search, fix_lf_artist_search, fix_search_metadata
 
-
+TS_API_KEY = app.config['TS_API_KEY']
+TS_API_URL = app.config['TS_API_URL']
 SP_API_URL = app.config['SP_API_URL']
 LF_API_URL = app.config['LF_API_URL']
 LF_API_KEY = app.config['LF_API_KEY']
@@ -280,8 +281,12 @@ def enqueue_item(user_id):
     spotify_url = None
     if queue_item['type'] == 'song':
         spotify_url = get_spotify_link_for_song(media)
+        grooveshark_url = get_grooveshark_link(" ".join([media['name'], media['artist']['name'],
+                                               media['album']['name']]))
     elif queue_item['type'] == 'artist':
         spotify_url = get_spotify_link_for_artist(media)
+        grooveshark_url = get_grooveshark_link(media['name'])
+
     orm_urls = UrlsForItem(spotify_url=spotify_url)
     orm_queue_item = QueueItem(user=to_user,queued_by_user=from_user,
                         urls=orm_urls,
@@ -390,6 +395,16 @@ def get_spotify_link_for_artist(artist):
     resp = requests.get("%s/search/1/artist.json?q=%s" % (SP_API_URL, search_text))
     link = resp.json()['artists'][0]['href']
     return link
+
+def get_grooveshark_link(text):
+    text_words = "+".join(text.split(" ")) 
+    link = requests.get('%s/a/%s?format=json&key=%s' % (TS_API_URL, text_words, TS_API_KEY))
+
+    if not link.json():
+        return None
+    
+    return link.json()
+
 
 def get_fb_friends(fb_id, access_token):
     resp = requests.get("%s/%s/friends?limit=5000&access_token=%s" %

@@ -292,10 +292,14 @@ class UrlsForItem(db.Model):
     __tablename__ = "urlsforitems"
     id = Column(Integer, primary_key=True)
     spotify_url = Column(String)
+    grooveshark_url = Column(String)
+
+
 
     def dictify(self):
         return {
                 'spotify':self.spotify_url,
+                'grooveshark':self.grooveshark_url
                 }
 
 
