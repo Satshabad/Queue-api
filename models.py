@@ -149,6 +149,7 @@ class SongItem(db.Model):
     small_image_link = Column(String)
     medium_image_link = Column(String)
     large_image_link = Column(String)
+    extra_large_image_link = Column(String)
 
     def dictify(self):
         return {
@@ -158,7 +159,8 @@ class SongItem(db.Model):
                 'images':{
                     'small':self.small_image_link,
                     'medium':self.medium_image_link,
-                    'large':self.large_image_link
+                    'large':self.large_image_link,
+                    'extraLarge':self.extra_large_image_link
                  }
         }
 
@@ -175,7 +177,7 @@ class NoteItem(db.Model):
     small_image_link = Column(String)
     medium_image_link = Column(String)
     large_image_link = Column(String)
-
+    extra_large_image_link = Column(String)
     text = Column(String)
 
     def dictify(self):
@@ -184,7 +186,8 @@ class NoteItem(db.Model):
                 'images':{
                     'small':self.small_image_link,
                     'medium':self.medium_image_link,
-                    'large':self.large_image_link
+                    'large':self.large_image_link,
+                    'extraLarge':self.extra_large_image_link
                  }
         }
 
@@ -203,6 +206,7 @@ class ArtistItem(db.Model):
     small_image_link = Column(String)
     medium_image_link = Column(String)
     large_image_link = Column(String)
+    extra_large_image_link = Column(String)
 
     def dictify(self):
         return {
@@ -210,7 +214,8 @@ class ArtistItem(db.Model):
                 'images':{
                     'small':self.small_image_link,
                     'medium':self.medium_image_link,
-                    'large':self.large_image_link
+                    'large':self.large_image_link,
+                    'extraLarge':self.extra_large_image_link
                 }
         }
 
@@ -231,6 +236,7 @@ class AlbumItem(db.Model):
     small_image_link = Column(String)
     medium_image_link = Column(String)
     large_image_link = Column(String)
+    extra_large_image_link = Column(String)
 
     def dictify(self):
         return {
@@ -238,7 +244,8 @@ class AlbumItem(db.Model):
                 'images':{
                     'small':self.small_image_link,
                     'medium':self.medium_image_link,
-                    'large':self.large_image_link
+                    'large':self.large_image_link,
+                    'extraLarge':self.extra_large_image_link
                 }
         }
 
@@ -257,6 +264,7 @@ class Artist(db.Model):
     small_image_link = Column(String)
     medium_image_link = Column(String)
     large_image_link = Column(String)
+    extra_large_image_link = Column(String)
 
     def dictify(self):
         return {
@@ -264,7 +272,8 @@ class Artist(db.Model):
                 'images':{
                         'small':self.small_image_link,
                         'medium':self.medium_image_link,
-                        'large':self.large_image_link
+                        'large':self.large_image_link,
+                        'extraLarge':self.extra_large_image_link
                     }}
 
 

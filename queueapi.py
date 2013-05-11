@@ -301,7 +301,8 @@ def enqueue_item(user_id):
         orm_artist = Artist(name=artist['name'],
                             small_image_link=artist['images']['small'],
                             medium_image_link=artist['images']['medium'],
-                            large_image_link=artist['images']['large'])
+                            large_image_link=artist['images']['large'],
+                            extra_large_image_link=artist['images']['extraLarge'])
 
         album = media['album']
         orm_album = Album(name=album['name'])
@@ -310,7 +311,8 @@ def enqueue_item(user_id):
         orm_song = SongItem(name=media['name'],
                             small_image_link=media['images']['small'],
                             medium_image_link=media['images']['medium'],
-                            large_image_link=media['images']['large'])
+                            large_image_link=media['images']['large'],
+                            extra_large_image_link=media['images']['extraLarge'])
 
         orm_song.artist = orm_artist
         orm_song.album = orm_album
@@ -321,7 +323,9 @@ def enqueue_item(user_id):
         orm_artist = ArtistItem(name=media['name'],
                             small_image_link=media['images']['small'],
                             medium_image_link=media['images']['medium'],
-                            large_image_link=media['images']['large'])
+                            large_image_link=media['images']['large'],
+                            extra_large_image_link=media['images']['extraLarge'])
+
 
         orm_queue_item.artist_item = [orm_artist]
         db.session.add_all([orm_artist, orm_queue_item])
@@ -330,7 +334,8 @@ def enqueue_item(user_id):
         orm_note = NoteItem(text=media['text'],
                             small_image_link=media['images']['small'],
                             medium_image_link=media['images']['medium'],
-                            large_image_link=media['images']['large'])
+                            large_image_link=media['images']['large'],
+                            extra_large_image_link=media['images']['extraLarge'])
 
 
 
