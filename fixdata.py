@@ -35,6 +35,8 @@ def fix_lastfm_listens_data(data):
         track['song']['album'] = track.pop('album')
         track['song']['album'][u'name'] = track['song']['album'].pop('#text')
         track['song']['artist'] = track.pop('artist')
+        track['song']['artist']['images']['extraLarge'] = track['song']['artist']['images'].pop('extralarge')
+
 
 
 
