@@ -279,6 +279,7 @@ def enqueue_item(user_id):
         return jsonify({'message':'users are not friends'}), 400
 
     spotify_url = None
+    grooveshark_url = None
     if queue_item['type'] == 'song':
         spotify_url = get_spotify_link_for_song(media)
         grooveshark_url = get_grooveshark_link(" ".join([media['name'], media['artist']['name'],
@@ -287,7 +288,7 @@ def enqueue_item(user_id):
         spotify_url = get_spotify_link_for_artist(media)
         grooveshark_url = get_grooveshark_link(media['name'])
 
-    orm_urls = UrlsForItem(spotify_url=spotify_url)
+    orm_urls = UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
     orm_queue_item = QueueItem(user=to_user,queued_by_user=from_user,
                         urls=orm_urls,
                         listened=True if queue_item['listened'] == 'true' else False,
