@@ -79,7 +79,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
 
         item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+                        'type':'note', 'listened':'false', 'note':{'text':'blah','images':{'small':"", 'medium':'', 'large':''} } }
         
         resp = self.app.post('user/%s/queue' % 4,  data=json.dumps(item_json), content_type='application/json')
 
@@ -92,7 +92,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('fateh', '123')
 
         item_json = {'fromUser':{'userID':json_user_old['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':''}}}
         
         resp = self.app.post('user/%s/queue' % json_user['userID'],  data=json.dumps(item_json),
                                 content_type='application/json')
@@ -124,7 +124,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
 
         item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':''}}}
 
 
         queueapi.is_friends = MagicMock(return_value=True)
@@ -144,7 +144,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
 
         item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':''}}}
 
         self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
 
@@ -159,7 +159,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
 
         item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':''}}}
 
         self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
 
@@ -179,7 +179,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
 
         item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':''}}}
 
         self.app.post('fbuser/%s/queue' % 123, data=json.dumps(item_json), content_type='application/json')
 
@@ -193,7 +193,7 @@ class HighLevelTests(unittest.TestCase):
         json_user = self.login('satshabad', '456')
 
         item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah'}}
+                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':''}}}
 
         self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
         resp = self.app.get('user/%s/queue' % json_user['userID'])

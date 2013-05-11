@@ -328,9 +328,11 @@ def enqueue_item(user_id):
 
     elif queue_item['type'] == 'note':
         orm_note = NoteItem(text=media['text'],
-                            small_image_link="",
-                            medium_image_link="",
-                            large_image_link="")
+                            small_image_link=media['images']['small'],
+                            medium_image_link=media['images']['medium'],
+                            large_image_link=media['images']['large'])
+
+
 
 
 
