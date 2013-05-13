@@ -73,7 +73,7 @@ def fix_lf_track_search(data):
 
         track['song'] = {}
         track['song']['name'] = track.pop('name')
-        track['song']['images'] = track.pop('images')
+        track['song']['images'] = track.pop('images', {})
         track['song']['images']['extraLarge'] = track['song']['images'].pop('extralarge')
         track['song']['artist'] = {'name':track.pop('artist')}
 
