@@ -37,6 +37,8 @@ def fix_lastfm_listens_data(data):
         track['song']['artist'] = track.pop('artist')
         track['song']['artist']['images']['extraLarge'] = track['song']['artist']['images'].pop('extralarge')
 
+        track['type'] = 'lastFM'
+
 
 
 
@@ -53,13 +55,17 @@ def fix_image_data(data):
 
 def fix_lf_track_search(data):
     fix_search_metadata(data)
+
+    if type(data['trackmatches']) == type(u''):
+        return {'trackResults':[]}
+
     data['trackResults'] = data.pop('trackmatches')['track']
     del data['@attr']
 
     for track in data['trackResults']:
         fix_image_data(track)
         del track['streamable']
-        #del track['listeners']
+        del track['listeners']
         del track['mbid']
         del track['url']
 
@@ -68,9 +74,15 @@ def fix_lf_track_search(data):
 
 def fix_lf_artist_search(data):
     fix_search_metadata(data)
-    data['artistResults'] = data.pop('artistmatches')['artist']
-    del data['@attr']
 
+    if type(data['artistmatches']) == type(u''):
+        return {'artistResults':[]}
+
+    data['artistResults'] = data.pop('artistmatches')['artist']
+    if type(data['artistResults']) == type({}):
+        data['artistResults'] = [data['artistResults']]
+
+    del data['@attr']
     for artist in data['artistResults']:
         fix_image_data(artist)
         del artist['streamable']

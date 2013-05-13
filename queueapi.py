@@ -68,8 +68,8 @@ def search(search_text):
     artist_results = requests.get(search_url %
                     (LF_API_URL, search_text, LF_API_KEY)).json()['results']
 
-    results = {'track_results':fix_lf_track_search(track_results),
-               'artist_results':fix_lf_artist_search(artist_results)}
+
+    results = dict(fix_lf_track_search(track_results).items() + fix_lf_artist_search(artist_results).items())
 
     return jsonify(results)
 
@@ -80,13 +80,31 @@ def get_listens(user_id):
     
     if not user:
         return '', 404
-
+    
+    listens = []
     lastfm_name = user.lastfm_name
-    if not lastfm_name:
-        return '', 404
+    twitter_name = 'fs1034'
+    
+    tweets = requests.get('https://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s' % twitter_name).json()
+
+    for tweet in tweets:
+        if '#SoundHound' in tweet['text']:
+            search_text = ''.join(tweet['text'].split(',')[0].split('by'))
+            song = json.loads(search(search_text).data)['trackResults'][0]
+            song['dateListened'] = calendar.timegm(datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y').utctimetuple())
+            song['artist'] = {'name':song['artist']}
+            song['type'] = 'SoundHound'
+            listens.append(song)
+
     data = requests.get("%smethod=user.getrecenttracks&user=%s&api_key=%sformat=json&extended=1"
                         % (LF_API_URL, lastfm_name, LF_API_KEY)).json()
-    return jsonify(fix_lastfm_listens_data(data))
+
+    data = fix_lastfm_listens_data(data)
+    data['recentTracks']['tracks'].extend(listens)
+
+    data['recentTracks']['tracks'] = sorted(data['recentTracks']['tracks'], lambda k1, k2: k1['dateListened'] > k2['dateListened'])
+
+    return jsonify(data)
 
 @app.route('/', methods=['GET'])
 @support_jsonp
@@ -354,7 +372,6 @@ def get_user(user_id):
 
 def fb_user_is_valid(fb_id, access_token):
     resp = requests.get("%s/me?access_token=%s" % (FB_API_URL, access_token))
-    print "%s/%s/me?access_token=%s" % (FB_API_URL, fb_id, access_token)
 
     if resp.status_code != 200:
         return False

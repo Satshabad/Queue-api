@@ -225,6 +225,21 @@ class HighLevelTests(unittest.TestCase):
         resp = self.app.delete('user/%s/queue/1' % json_user['userID'])
 
         self.assertEqual(resp.status_code, 404)
+    
+    @patch('queue_app.queueapi.requests', MagicMock())
+    @patch('queue_app.queueapi.fix_lf_track_search', MagicMock(return_value={}))
+    @patch('queue_app.queueapi.fix_lf_artist_search', MagicMock(return_value={}))
+    def test_get_listens(self):
+
+        json_user = self.login('satshabad', '456')
+
+        data = {'lastFMUsername':'satshabad'}
+        resp = self.app.put('user/%s' % json_user['userID'], data=json.dumps(data), content_type='application/json')
+        
+        resp = self.app.get('user/%s/listens' % json_user['userID'])
+
+ 
+
 
 if __name__ == '__main__':
     unittest.main()
