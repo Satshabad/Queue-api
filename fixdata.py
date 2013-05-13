@@ -64,10 +64,20 @@ def fix_lf_track_search(data):
 
     for track in data['trackResults']:
         fix_image_data(track)
+
         del track['streamable']
         del track['listeners']
         del track['mbid']
         del track['url']
+
+
+        track['song'] = {}
+        track['song']['name'] = track.pop('name')
+        track['song']['images'] = track.pop('images')
+        track['song']['images']['extraLarge'] = track['song']['images'].pop('extralarge')
+        track['song']['artist'] = {'name':track.pop('artist')}
+
+        track['type'] = 'lastFM'
 
     return data
 

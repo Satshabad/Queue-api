@@ -92,7 +92,6 @@ def get_listens(user_id):
             search_text = ''.join(tweet['text'].split(',')[0].split('by'))
             song = json.loads(search(search_text).data)['trackResults'][0]
             song['dateListened'] = calendar.timegm(datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y').utctimetuple())
-            song['artist'] = {'name':song['artist']}
             song['type'] = 'SoundHound'
             listens.append(song)
 
