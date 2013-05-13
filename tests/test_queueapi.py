@@ -227,15 +227,16 @@ class HighLevelTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 404)
     
     @patch('queue_app.queueapi.requests', MagicMock())
+    @patch('queue_app.queueapi.LastFMer')
     @patch('queue_app.queueapi.fix_lf_track_search', MagicMock(return_value={}))
     @patch('queue_app.queueapi.fix_lf_artist_search', MagicMock(return_value={}))
-    def test_get_listens(self):
+    def test_get_listens(self, LastFMer):
 
         json_user = self.login('satshabad', '456')
 
         data = {'lastFMUsername':'satshabad'}
         resp = self.app.put('user/%s' % json_user['userID'], data=json.dumps(data), content_type='application/json')
-        
+        LastFMer.get_user_listens.return_value = {'tracks':[]}
         resp = self.app.get('user/%s/listens' % json_user['userID'])
 
  
