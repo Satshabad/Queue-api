@@ -21,11 +21,31 @@ class LastfmerSpec(unittest.TestCase):
                         "track":[
                           {
                             "artist":{
-                              "#text":"Ursula 1000",
-                              "mbid":"75f9a2a2-b76d-490d-8dd2-ab5c172bcd78"
+                              "name":"Ursula 1000",
+                              "mbid":"75f9a2a2-b76d-490d-8dd2-ab5c172bcd78",
+                              "url":"Ursula 1000",
+                              "image":[
+                                {
+                                  "#text":"http:\/\/userserve-ak.last.fm\/serve\/34\/82202.jpg",
+                                  "size":"small"
+                                },
+                                {
+                                  "#text":"http:\/\/userserve-ak.last.fm\/serve\/64\/82202.jpg",
+                                  "size":"medium"
+                                },
+                                {
+                                  "#text":"http:\/\/userserve-ak.last.fm\/serve\/126\/82202.jpg",
+                                  "size":"large"
+                                },
+                                {
+                                  "#text":"http:\/\/userserve-ak.last.fm\/serve\/252\/82202.jpg",
+                                  "size":"extralarge"
+                                }
+                              ]
                             },
+                            "loved":"0",
                             "name":"Mucho Tequila",
-                            "streamable":"1",
+                            "streamable":"0",
                             "mbid":"f5084869-4b68-451d-be0c-cf14f6f52b39",
                             "album":{
                               "#text":"Kinda' Kinky",
@@ -72,6 +92,8 @@ class LastfmerSpec(unittest.TestCase):
 
         expect(formated_tracks['tracks'][0]).contains('song')
         expect(formated_tracks['tracks'][0]['song']).contains('artist')
+        expect(formated_tracks['tracks'][0]['song']['artist']).contains('images')
+
         expect(formated_tracks['tracks'][0]['song']).contains('album')
         expect(formated_tracks['tracks'][0]['song']).contains('images')
 

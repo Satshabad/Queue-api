@@ -38,7 +38,9 @@ class LastFMer():
             new_track['song']['album'] = track['album']
             new_track['song']['album'][u'name'] = track['album']['#text']
 
-            new_track['song']['artist'] = LastFMer.parse_images(track['artist'])
+            new_track['song']['artist'] = {}
+            new_track['song']['artist']['name'] = track['artist']
+            new_track['song']['artist']['images'] = LastFMer.parse_images(track['artist'])
 
             new_data['tracks'].append(new_track)
 
