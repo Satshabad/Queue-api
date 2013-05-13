@@ -13,10 +13,10 @@ class LastFMer():
         data = requests.get("%smethod=user.getrecenttracks&user=%s&api_key=%sformat=json&extended=1"
                         % (LF_API_URL, lastfm_name, LF_API_KEY)).json()
 
-        return LastFMer.format_data(data)
+        return LastFMer.format_listen_data(data)
 
     @staticmethod
-    def format_data(data):
+    def format_listen_data(data):
         new_data = {}
 
         new_data['tracks'] = []
@@ -57,3 +57,83 @@ class LastFMer():
                     new_images[image['size']] = image['#text']
 
         return new_images
+
+
+    @staticmethod
+    def search_for_songs(search_text):
+        search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
+        track_results = requests.get(search_url %
+                    (LF_API_URL, search_text, LF_API_KEY)).json()
+
+        return LastFMer.format_song_search_data(track_results)
+
+    @staticmethod
+    def format_song_search_data(data):
+        tracks = []
+
+        if type(data['results']['trackmatches']) == type(u''):
+            return tracks
+
+        for track in data['results']['trackmatches']['track']:
+            new_track = {}
+
+            new_track['images'] = LastFMer.parse_images(track)
+            new_track['name'] = track['name']
+            new_track['images'] = track.get('images', {})
+            new_track['artist'] = {'name':track['artist']}
+
+            tracks.append(new_track)
+
+        return tracks
+
+    @staticmethod
+    def search_for_artists(search_text):
+        search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
+        artist_results = requests.get(search_url %
+                    (LF_API_URL, search_text, LF_API_KEY)).json()
+        return LastFMer.format_artist_search_data(artist_results)
+
+
+
+    @staticmethod
+    def format_artist_search_data(data):
+        artists = []
+
+        if type(data['results']['artistmatches']) == type(u''):
+            return artists
+
+        for artist in data['results']['artistmatches']['artist']:
+            new_artist = {}
+
+            new_artist['images'] = LastFMer.parse_images(artist)
+            new_artist['listeners'] = artist['listeners']
+            new_artist['name'] = artist['name']
+
+            artists.append(new_artist)
+
+        return artists
+
+
+
+def fix_lf_artist_search(data):
+    fix_search_metadata(data)
+
+    if type(data['artistmatches']) == type(u''):
+        return {'artistResults':[]}
+
+    data['artistResults'] = data.pop('artistmatches')['artist']
+    if type(data['artistResults']) == type({}):
+        data['artistResults'] = [data['artistResults']]
+
+    del data['@attr']
+    for artist in data['artistResults']:
+        fix_image_data(artist)
+        del artist['streamable']
+        del artist['mbid']
+        #del artist['listeners']
+        del artist['url']
+
+    return data
+
+
+ 

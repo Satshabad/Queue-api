@@ -16,7 +16,7 @@ class LastfmerSpec(unittest.TestCase):
         expect(requests.get.call_count) == 1
 
     def it_formats_the_recent_listens(self):
-        formated_tracks = LastFMer.format_data(json.loads(""" {
+        formated_tracks = LastFMer.format_listen_data(json.loads(""" {
                       "recenttracks":{
                         "track":[
                           {
@@ -111,4 +111,139 @@ class LastfmerSpec(unittest.TestCase):
         expect(new_images).contains('extraLarge')
         
         
+    # Search 
+
+    @patch('queue_app.lastfm.LastFMer.format_song_search_data')
+    @patch('queue_app.lastfm.requests')
+    def it_searches_for_songs(self, requests, format_song_search_data):
+        format_song_search_data.return_value = []
+        result = LastFMer.search_for_songs("Wake up Motopony")
+        expect(requests.get.call_count) == 1
+        expect(result) == []
+
+
+
+    def it_formats_song_search_data(self):
+        new_data = LastFMer.format_song_search_data(json.loads("""{
+                        "results": {
+                            "opensearch:Query": {
+                                "#text": "",
+                                "role": "request",
+                                "searchTerms": "Believe",
+                                "startPage": "1"
+                            },
+                            "opensearch:totalResults": "73186",
+                            "opensearch:startIndex": "0",
+                            "opensearch:itemsPerPage": "30",
+                            "trackmatches": {
+                                "track": [
+                                    {
+                                        "name": "Believe Me Natalie",
+                                        "artist": "The Killers",
+                                        "url": "http://www.last.fm/music/The+Killers/_/Believe+Me+Natalie",
+                                        "streamable": {
+                                            "#text": "1",
+                                            "fulltrack": "0"
+                                        },
+                                        "listeners": "577048",
+                                        "image": [
+                                            {
+                                                "#text": "http://userserve-ak.last.fm/serve/34s/68101062.png",
+                                                "size": "small"
+                                            },
+                                            {
+                                                "#text": "http://userserve-ak.last.fm/serve/64s/68101062.png",
+                                                "size": "medium"
+                                            },
+                                            {
+                                                "#text": "http://userserve-ak.last.fm/serve/126/68101062.png",
+                                                "size": "large"
+                                            },
+                                            {
+                                                "#text": "http://userserve-ak.last.fm/serve/300x300/68101062.png",
+                                                "size": "extralarge"
+                                            }
+                                        ],
+                                        "mbid": "077f4678-2eed-4e3e-bdbd-8476a9201b62"
+                                    }
+                                ]
+                            },
+                            "@attr": {
+                                "for": "Believe"
+                            }
+                        }
+                    }"""))
+        expect(new_data[0]).contains('images')
+        expect(new_data[0]).contains('name')
+        expect(new_data[0]).contains('artist')
+        expect(new_data[0]['artist']).contains('name')
+
+    @patch('queue_app.lastfm.LastFMer.format_artist_search_data')
+    @patch('queue_app.lastfm.requests')
+    def it_searches_for_artists(self, requests, format_artist_search_data):
+        format_artist_search_data.return_value = []
+        result = LastFMer.search_for_artists("Wake up Motopony")
+        expect(requests.get.call_count) == 1
+        expect(result) == []
+
+
+
+    def it_formats_artist_search_data(self):
+        new_data = LastFMer.format_artist_search_data(json.loads("""{
+                    "results": {
+                        "opensearch:Query": {
+                            "#text": "",
+                            "role": "request",
+                            "searchTerms": "Believe",
+                            "startPage": "1"
+                        },
+                        "opensearch:totalResults": "964",
+                        "opensearch:startIndex": "0",
+                        "opensearch:itemsPerPage": "30",
+                        "artistmatches": {
+                            "artist": [
+                                {
+                                    "name": "Choir of Young Believers",
+                                    "listeners": "71947",
+                                    "mbid": "06aa617f-b589-433b-82df-a19ae00d8aca",
+                                    "url": "http://www.last.fm/music/Choir+of+Young+Believers",
+                                    "streamable": "1",
+                                    "image": [
+                                        {
+                                            "#text": "http://userserve-ak.last.fm/serve/34/17963911.jpg",
+                                            "size": "small"
+                                        },
+                                        {
+                                            "#text": "http://userserve-ak.last.fm/serve/64/17963911.jpg",
+                                            "size": "medium"
+                                        },
+                                        {
+                                            "#text": "http://userserve-ak.last.fm/serve/126/17963911.jpg",
+                                            "size": "large"
+                                        },
+                                        {
+                                            "#text": "http://userserve-ak.last.fm/serve/252/17963911.jpg",
+                                            "size": "extralarge"
+                                        },
+                                        {
+                                            "#text": "http://userserve-ak.last.fm/serve/500/17963911/Choir+of+Young+Believers+080821_Venus2.jpg",
+                                            "size": "mega"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "@attr": {
+                            "for": "Believe"
+                        }
+                    }
+
+                }"""))
+
+        expect(new_data[0]).contains('images')
+        expect(new_data[0]).contains('name')
+        expect(new_data[0]).contains('listeners')
+
+
+
 
