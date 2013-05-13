@@ -14,7 +14,8 @@ import requests
 from main import app, db, login_manager
 
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
-from fixdata import fix_lastfm_listens_data, fix_image_data, fix_lf_track_search, fix_lf_artist_search, fix_search_metadata
+from fixdata import fix_image_data, fix_lf_track_search, fix_lf_artist_search, fix_search_metadata
+from lastfm import LastFMer
 
 TS_API_KEY = app.config['TS_API_KEY']
 TS_API_URL = app.config['TS_API_URL']
@@ -94,12 +95,10 @@ def get_listens(user_id):
             song['dateListened'] = str(calendar.timegm(datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y').utctimetuple()))
             song['type'] = 'SoundHound'
             listens.append(song)
+    
+    lastfm_tracks = LastFMer.get_user_listens(lastfm_name)
 
-    data = requests.get("%smethod=user.getrecenttracks&user=%s&api_key=%sformat=json&extended=1"
-                        % (LF_API_URL, lastfm_name, LF_API_KEY)).json()
-
-    data = fix_lastfm_listens_data(data)
-    data['recentTracks']['tracks'].extend(listens)
+    data = {'recentTracks':{ 'tracks':lastfm_tracks['tracks'] + listens }}
 
     data['recentTracks']['tracks'] = sorted(data['recentTracks']['tracks'], lambda k1, k2: k1['dateListened'] > k2['dateListened'])
 

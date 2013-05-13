@@ -1,49 +1,5 @@
 import calendar
 import datetime
-def fix_lastfm_listens_data(data):
-    data['recentTracks'] = data.pop('recenttracks')
-    data['recentTracks'][u'metadata'] = data['recentTracks'].pop('@attr')
-    data['recentTracks'][u'tracks'] = data['recentTracks'].pop('track')
-
-    for i, track in enumerate(data['recentTracks']['tracks']):
-        del track['streamable']
-        del track['loved']
-
-        del track['artist']['url']
-        del track['url']
-        del track['mbid']
-        del track['artist']['mbid']
-        del track['album']['mbid']
-
-        if track.has_key("date"):
-            del track['date']['#text']
-            track['dateListened'] = track["date"]['uts']
-            del track['date']
-        else:
-            track['dateListened'] = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
-
-        if track.has_key("@attr"):
-            del track["@attr"]
-
-        fix_image_data(track)
-        fix_image_data(track['artist'])
-
-        track['song'] = {}
-        track['song']['name'] = track.pop('name')
-        track['song']['images'] = track.pop('images')
-        track['song']['images']['extraLarge'] = track['song']['images'].pop('extralarge')
-        track['song']['album'] = track.pop('album')
-        track['song']['album'][u'name'] = track['song']['album'].pop('#text')
-        track['song']['artist'] = track.pop('artist')
-        track['song']['artist']['images']['extraLarge'] = track['song']['artist']['images'].pop('extralarge')
-
-        track['type'] = 'lastFM'
-
-
-
-
-    return data
-
 def fix_image_data(data):
     if 'image' in data:
         data['images'] = {}
