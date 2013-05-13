@@ -91,13 +91,15 @@ class LastfmerSpec(unittest.TestCase):
         expect(formated_tracks['tracks'][0]).contains('dateListened')
 
         expect(formated_tracks['tracks'][0]).contains('song')
+
+        expect(formated_tracks['tracks'][0]['song']).contains('images')
+
         expect(formated_tracks['tracks'][0]['song']).contains('artist')
         expect(formated_tracks['tracks'][0]['song']['artist']).contains('images')
         expect(formated_tracks['tracks'][0]['song']['artist']).contains('name')
 
         expect(formated_tracks['tracks'][0]['song']).contains('album')
         expect(formated_tracks['tracks'][0]['song']['album']).contains('name')
-        expect(formated_tracks['tracks'][0]['song']).contains('images')
 
                         
     def it_parses_and_formats_the_images(self):
