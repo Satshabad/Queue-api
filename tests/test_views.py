@@ -13,7 +13,7 @@ from mock import patch, MagicMock
 from flask import Flask, request
 from flask.ext.sqlalchemy import SQLAlchemy
 
-from queue_app import main, models, init_db, queueapi
+from queue_app import app, models, init_db, views
 User = models.User
 Friend = models.Friend
 QueueItem = models.QueueItem
@@ -26,21 +26,21 @@ class HighLevelTests(unittest.TestCase):
     def setUp(self):
         """Before each test, set up a blank database"""
 
-        main.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-        main.app.config['TESTING'] = True
-        self.app = main.app.test_client()
-        self.db = SQLAlchemy(main.app)
+        app.app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
+        app.app.config['TESTING'] = True
+        self.app = app.app.test_client()
+        self.db = SQLAlchemy(app.app)
         init_db.init_db()
 
-        queueapi.get_spotify_link_for_song =  MagicMock(return_value='dummylink')
-        queueapi.get_grooveshark_link=  MagicMock(return_value='dummylink')
+        views.get_spotify_link_for_song =  MagicMock(return_value='dummylink')
+        views.get_grooveshark_link=  MagicMock(return_value='dummylink')
 
     def tearDown(self):
         self.logout()
         pass
 
     def login(self, full_name, fb_id):
-        queueapi.fb_user_is_valid = MagicMock(return_value=True)
+        views.fb_user_is_valid = MagicMock(return_value=True)
         request_json = {'accessToken':'abc', 'fbId':fb_id, 'fullName':full_name, 'imageLink':'foo'}
         resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
         return json.loads(resp.data)
@@ -65,7 +65,7 @@ class HighLevelTests(unittest.TestCase):
         self.assertEqual(resp.status_code, 401)
 
     def test_logout(self):
-        queueapi.fb_user_is_valid = MagicMock(return_value=True)
+        views.fb_user_is_valid = MagicMock(return_value=True)
         request_json = {'accessToken':'abc', 'fbId':'456', 'fullName':'satshabad', 'imageLink':'foo'}
         resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
 
@@ -106,7 +106,7 @@ class HighLevelTests(unittest.TestCase):
                         'type':'song', 'listened':'false', 'song':{'name':'Too Soon to Tell','images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}, 'artist':{'name':'Todd Snider', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}, 'album':{'name':'Agnostic Hymns & Stoner Fables'}}}
 
 
-        queueapi.is_friends = MagicMock(return_value=True)
+        views.is_friends = MagicMock(return_value=True)
         self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
 
         queue_item = self.db.session.query(QueueItem).one()
@@ -127,7 +127,7 @@ class HighLevelTests(unittest.TestCase):
                         'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}}
 
 
-        queueapi.is_friends = MagicMock(return_value=True)
+        views.is_friends = MagicMock(return_value=True)
         self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
 
         queue_item = self.db.session.query(QueueItem).one()
@@ -226,8 +226,8 @@ class HighLevelTests(unittest.TestCase):
 
         self.assertEqual(resp.status_code, 404)
     
-    @patch('queue_app.queueapi.requests', MagicMock())
-    @patch('queue_app.queueapi.LastFMer')
+    @patch('queue_app.views.requests', MagicMock())
+    @patch('queue_app.views.LastFMer')
     def test_get_listens(self, LastFMer):
 
         json_user = self.login('satshabad', '456')

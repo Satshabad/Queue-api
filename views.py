@@ -11,7 +11,7 @@ from flask.ext.login import login_required, login_user, logout_user, current_use
 
 import requests
 
-from main import app, db, login_manager
+from app import app, db, login_manager
 
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
 from lastfm import LastFMer
