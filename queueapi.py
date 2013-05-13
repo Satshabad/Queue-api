@@ -61,16 +61,9 @@ def create_db():
 @app.route('/search/<search_text>', methods=['GET'])
 @support_jsonp
 def search(search_text):
-    search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
-    track_results = requests.get(search_url %
-                    (LF_API_URL, search_text, LF_API_KEY)).json()['results']
-
-    search_url = "%smethod=artist.search&artist=%s&api_key=%sformat=json"
-    artist_results = requests.get(search_url %
-                    (LF_API_URL, search_text, LF_API_KEY)).json()['results']
-
-
-    results = dict(fix_lf_track_search(track_results).items() + fix_lf_artist_search(artist_results).items())
+    tracks = LastFMer.search_for_songs(search_text)
+    artists = LastFMer.search_for_artists(search_text)
+    results = {'trackResults':tracks, 'artistResults':artists}
 
     return jsonify(results)
 
