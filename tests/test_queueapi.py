@@ -228,8 +228,6 @@ class HighLevelTests(unittest.TestCase):
     
     @patch('queue_app.queueapi.requests', MagicMock())
     @patch('queue_app.queueapi.LastFMer')
-    @patch('queue_app.queueapi.fix_lf_track_search', MagicMock(return_value={}))
-    @patch('queue_app.queueapi.fix_lf_artist_search', MagicMock(return_value={}))
     def test_get_listens(self, LastFMer):
 
         json_user = self.login('satshabad', '456')
