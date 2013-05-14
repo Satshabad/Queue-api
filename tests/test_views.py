@@ -98,8 +98,13 @@ class HighLevelTests(unittest.TestCase):
                                 content_type='application/json')
 
         self.assertEqual(resp.status_code, 403)
+    
+    @patch('queue_app.views.Linker.spotify_song')
+    @patch('queue_app.views.Linker.grooveshark')
+    def test_add_song_to_queue(self, spotify_song, grooveshark):
+        spotify_song.return_value = "Some spotify link"
+        grooveshark.return_value = "Some grooveshark link"
 
-    def test_add_song_to_queue(self):
         json_user = self.login('satshabad', '456')
 
         item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},

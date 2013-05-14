@@ -15,6 +15,7 @@ from app import app, db, login_manager
 
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
 from lastfm import LastFMer
+from links import Linker
 
 TS_API_KEY = app.config['TS_API_KEY']
 TS_API_URL = app.config['TS_API_URL']
@@ -286,23 +287,11 @@ def enqueue_item(user_id):
     if not is_friends(from_fb_id, to_fb_id, access_token):
         return jsonify({'message':'users are not friends'}), 400
 
-    spotify_url = None
-    grooveshark_url = None
-    if queue_item['type'] == 'song':
-        spotify_url = get_spotify_link_for_song(media)
-        grooveshark_url = get_grooveshark_link(" ".join([media['name'], media['artist']['name'],
-                                               media['album']['name']]))
-    elif queue_item['type'] == 'artist':
-        spotify_url = get_spotify_link_for_artist(media)
-        grooveshark_url = get_grooveshark_link(media['name'])
-
-    orm_urls = UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
     orm_queue_item = QueueItem(user=to_user,queued_by_user=from_user,
-                        urls=orm_urls,
+                        urls=None,
                         listened=True if queue_item['listened'] == 'true' else False,
                         date_queued=calendar.timegm(datetime.datetime.utcnow().utctimetuple()))
 
-    db.session.add(orm_urls)
 
     if queue_item['type'] == 'song':
         artist = media['artist']
@@ -322,10 +311,16 @@ def enqueue_item(user_id):
                             large_image_link=media['images']['large'],
                             extra_large_image_link=media['images']['extraLarge'])
 
+
+        spotify_url = Linker.spotify_song(song=orm_song.name, artist=orm_artist.name)
+        grooveshark_url = Linker.grooveshark(artist=orm_artist.name, song=orm_song.name)
+        orm_urls = UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
+
         orm_song.artist = orm_artist
         orm_song.album = orm_album
+        orm_queue_item.urls = orm_urls
         orm_queue_item.song_item = [orm_song]
-        db.session.add_all([orm_queue_item, orm_song, orm_album, orm_artist])
+        db.session.add_all([orm_queue_item, orm_song, orm_album, orm_artist, orm_urls])
 
     elif queue_item['type'] == 'artist':
         orm_artist = ArtistItem(name=media['name'],
@@ -335,8 +330,13 @@ def enqueue_item(user_id):
                             extra_large_image_link=media['images']['extraLarge'])
 
 
+        spotify_url = Linker.spotify_artist(artist=orm_artist.name)
+        grooveshark_url = Linker.grooveshark(artist=orm_artist.name)
+        orm_urls = UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
+
+        orm_queue_item.urls = orm_urls
         orm_queue_item.artist_item = [orm_artist]
-        db.session.add_all([orm_artist, orm_queue_item])
+        db.session.add_all([orm_artist, orm_queue_item, orm_urls])
 
     elif queue_item['type'] == 'note':
         orm_note = NoteItem(text=media['text'],
@@ -346,11 +346,11 @@ def enqueue_item(user_id):
                             extra_large_image_link=media['images']['extraLarge'])
 
 
-
-
+        orm_urls = UrlsForItem(spotify_url="", grooveshark_url="")
+        orm_queue_item.urls = orm_urls
 
         orm_queue_item.note_item = [orm_note]
-        db.session.add_all([orm_note, orm_queue_item])
+        db.session.add_all([orm_note, orm_queue_item, orm_urls])
 
     db.session.commit()
 

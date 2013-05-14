@@ -22,7 +22,7 @@ class Linker():
     @staticmethod
     def spotify_song(song, artist):
         
-        resp = requests.get("%s/search/1/song.json?q=%s" % (SP_API_URL, " ".join([artist, song])))
+        resp = requests.get("%s/search/1/track.json?q=%s" % (SP_API_URL, "+".join([artist, song])))
 
         data = resp.json()['tracks']
 
