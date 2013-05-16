@@ -77,6 +77,9 @@ def get_listens(user_id):
     
     listens = []
     lastfm_name = user.lastfm_name
+
+    if not lastfm_name:
+        return '', 404
     
 
     lastfm_tracks = LastFMer.get_user_listens(lastfm_name)
