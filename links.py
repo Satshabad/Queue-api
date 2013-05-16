@@ -12,6 +12,9 @@ class Linker():
         
         resp = requests.get("%s/search/1/artist.json?q=%s" % (SP_API_URL, artist))
 
+        if resp.status_code != 200:
+            return ""
+
         data = resp.json()['artists']
 
         if data == []:
@@ -24,6 +27,9 @@ class Linker():
         
         resp = requests.get("%s/search/1/track.json?q=%s" % (SP_API_URL, "+".join([artist, song])))
 
+        if resp.status_code != 200:
+            return ""
+
         data = resp.json()['tracks']
 
         if data == []:
@@ -34,6 +40,9 @@ class Linker():
     @staticmethod
     def grooveshark(artist, song=""):
         link = requests.get('%s/a/%s?format=json&key=%s' % (TS_API_URL, " ".join([artist, song]), TS_API_KEY))
+
+        if link.status_code != 200:
+            return ""
 
         if not link.json():
             return ""

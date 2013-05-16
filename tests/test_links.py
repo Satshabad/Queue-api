@@ -12,6 +12,7 @@ class LinkerSpec(unittest.TestCase):
     
     @patch('queue_app.links.requests')
     def it_finds_the_spotify_artist_link(self, requests):
+        requests.get.return_value.status_code = 200
         requests.get.return_value.json.return_value = json.loads("""{
                         "info": {
                             "num_results": 2,
@@ -58,6 +59,7 @@ class LinkerSpec(unittest.TestCase):
 
     @patch('queue_app.links.requests')
     def it_finds_the_spotify_song_link(self, requests):
+        requests.get.return_value.status_code = 200
         requests.get.return_value.json.return_value = json.loads(""" {
                         "info": {
                             "num_results": 2,
@@ -121,6 +123,7 @@ class LinkerSpec(unittest.TestCase):
 
     @patch('queue_app.links.requests')
     def it_finds_the_grooveshark_link(self, requests):
+        requests.get.return_value.status_code = 200
         requests.get.return_value.json.return_value = "http:\/\/tinysong.com\/Ypc9"
 
         link = Linker.grooveshark(song="Too Soon to Tell", artist="Todd Snider")
