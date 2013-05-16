@@ -88,7 +88,7 @@ class LastFMer():
 
     @staticmethod
     def search_for_artists(search_text):
-        search_url = "%smethod=track.search&track=%s&api_key=%sformat=json"
+        search_url = "%smethod=artist.search&artist=%s&api_key=%sformat=json"
         artist_results = requests.get(search_url %
                     (LF_API_URL, search_text, LF_API_KEY)).json()
         return LastFMer.format_artist_search_data(artist_results)
@@ -113,27 +113,3 @@ class LastFMer():
 
         return artists
 
-
-
-def fix_lf_artist_search(data):
-    fix_search_metadata(data)
-
-    if type(data['artistmatches']) == type(u''):
-        return {'artistResults':[]}
-
-    data['artistResults'] = data.pop('artistmatches')['artist']
-    if type(data['artistResults']) == type({}):
-        data['artistResults'] = [data['artistResults']]
-
-    del data['@attr']
-    for artist in data['artistResults']:
-        fix_image_data(artist)
-        del artist['streamable']
-        del artist['mbid']
-        #del artist['listeners']
-        del artist['url']
-
-    return data
-
-
- 
