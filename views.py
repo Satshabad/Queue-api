@@ -77,21 +77,11 @@ def get_listens(user_id):
     
     listens = []
     lastfm_name = user.lastfm_name
-    twitter_name = 'fs1034'
     
-    tweets = requests.get('https://api.twitter.com/1/statuses/user_timeline.json?screen_name=%s' % twitter_name).json()
 
-    for tweet in tweets:
-        if '#SoundHound' in tweet['text']:
-            search_text = ''.join(tweet['text'].split(',')[0].split('by'))
-            song = json.loads(search(search_text).data)['trackResults'][0]
-            song['dateListened'] = str(calendar.timegm(datetime.datetime.strptime(tweet['created_at'], '%a %b %d %H:%M:%S +0000 %Y').utctimetuple()))
-            song['type'] = 'SoundHound'
-            listens.append(song)
-    
     lastfm_tracks = LastFMer.get_user_listens(lastfm_name)
 
-    data = {'recentTracks':{ 'tracks':lastfm_tracks['tracks'] + listens }}
+    data = {'recentTracks':{ 'tracks':lastfm_tracks['tracks']}}
 
     data['recentTracks']['tracks'] = sorted(data['recentTracks']['tracks'], lambda k1, k2: k1['dateListened'] > k2['dateListened'])
 
