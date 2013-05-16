@@ -54,7 +54,7 @@ class LinkerSpec(unittest.TestCase):
 
         link = Linker.spotify_artist(artist="corndawg")
 
-        expect(link) == ""
+        expect(link) == None
 
 
     @patch('queue_app.links.requests')
@@ -104,7 +104,7 @@ class LinkerSpec(unittest.TestCase):
         expect(link) == "spotify:track:1jtSxb2CgTrX2RAa8aPnE6"
 
     @patch('queue_app.links.requests')
-    def it_doesnt_find_the_spotify_artist_link(self, requests):
+    def it_doesnt_find_the_spotify_song_link(self, requests):
         requests.get.return_value.json.return_value = json.loads(""" {
                         "info": {
                             "num_results": 2,
@@ -119,7 +119,7 @@ class LinkerSpec(unittest.TestCase):
 
         link = Linker.spotify_song(song="chevy", artist="corndawg")
 
-        expect(link) == ""
+        expect(link) == None
 
     @patch('queue_app.links.requests')
     def it_finds_the_grooveshark_link(self, requests):

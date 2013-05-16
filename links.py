@@ -13,12 +13,12 @@ class Linker():
         resp = requests.get("%s/search/1/artist.json?q=%s" % (SP_API_URL, artist))
 
         if resp.status_code != 200:
-            return ""
+            return None
 
         data = resp.json()['artists']
 
         if data == []:
-            return ""
+            return None
 
         return data[0]['href']
 
@@ -28,12 +28,12 @@ class Linker():
         resp = requests.get("%s/search/1/track.json?q=%s" % (SP_API_URL, "+".join([artist, song])))
 
         if resp.status_code != 200:
-            return ""
+            return None
 
         data = resp.json()['tracks']
 
         if data == []:
-            return ""
+            return None
 
         return data[0]['href']
 
@@ -42,10 +42,10 @@ class Linker():
         link = requests.get('%s/a/%s?format=json&key=%s' % (TS_API_URL, " ".join([artist, song]), TS_API_KEY))
 
         if link.status_code != 200:
-            return ""
+            return None
 
         if not link.json():
-            return ""
+            return None
     
         return link.json()
 
