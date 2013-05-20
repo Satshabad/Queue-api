@@ -172,7 +172,7 @@ def get_queue(user_id):
     for item in items:
         queue.append(item.dictify())
 
-    queue = sorted(queue, key=lambda x: (x['listened'], -1*x['dateQueued']))
+    queue = sorted(queue, key=lambda x: (1*x['listened'], -1*x['dateQueued']))
     return jsonify({"queue":{"items":queue}})
 
 @app.route('/user/<user_id>/queue/<item_id>', methods=['DELETE'])
@@ -204,7 +204,7 @@ def delete_queue_item(user_id, item_id):
 @support_jsonp
 @login_required
 def change_queue_item(user_id, item_id):
-    listened = True if request.json['listened'] == 'true' else False
+    listened = True if request.json['listened'] == 1 else False
     user = get_user(user_id)
 
     if user != current_user:
@@ -230,24 +230,14 @@ def enqueue_item_by_fbid(fb_id):
     access_token = queue_item['fromUser']['accessToken']
     from_user = get_user(from_user_id)
     to_user = get_user_by_fbid(fb_id)
-
     if from_user != current_user:
         return '', 403
 
     if not from_user:
         return no_such_user(from_user)
 
-    from_fb_id = from_user.fb_id
-
-    if not is_friends(from_fb_id, fb_id, access_token):
-        return jsonify({'message':'users are not friends'}), 400
-
     if not to_user:
-        to_user = User(fb_id=fb_id, access_token=None,
-                fullname=None, image_link=None)
-
-        db.session.add(to_user)
-        db.session.commit()
+        return no_such_user(to_user)
 
     return enqueue_item(to_user.id)
 
@@ -278,8 +268,8 @@ def enqueue_item(user_id):
     to_fb_id = to_user.fb_id
 
     if not is_friends(from_fb_id, to_fb_id, access_token):
-        return jsonify({'message':'users are not friends'}), 400
-
+        return jsonify({'message':'users are not friends'}), 403
+    
     orm_queue_item = QueueItem(user=to_user,queued_by_user=from_user,
                         urls=None,
                         listened=True if queue_item['listened'] == 'true' else False,
@@ -347,7 +337,7 @@ def enqueue_item(user_id):
 
     db.session.commit()
 
-    return jsonify({"status":"OK"})
+    return jsonify(orm_queue_item.dictify())
 
 
 def get_user(user_id):

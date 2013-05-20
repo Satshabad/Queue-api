@@ -24,7 +24,6 @@ class Linker():
 
     @staticmethod
     def spotify_song(song, artist):
-        
         resp = requests.get("%s/search/1/track.json?q=%s" % (SP_API_URL, "+".join([artist, song])))
 
         if resp.status_code != 200:

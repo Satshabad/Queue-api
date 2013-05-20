@@ -7,6 +7,7 @@ import json
 import sys
 
 import requests
+from expecter import expect
 
 from mock import patch, MagicMock
 
@@ -19,10 +20,22 @@ Friend = models.Friend
 QueueItem = models.QueueItem
 SongItem = models.SongItem
 NoteItem = models.NoteItem
-   
+ 
+def make_user_post_dict(fb_id=456, full_name='satshabad', access_token='abc', image_link='http://image.com/jpeg'):
+    return {'accessToken':access_token, 'fbId':fb_id, 'fullName':full_name, 'imageLink':image_link}
 
-class HighLevelTests(unittest.TestCase):
+def make_note_post_dict(user_id, access_token, listened=False, text='blah'):
+    return {'fromUser':{'userID':user_id, 'accessToken':access_token},
+            'type':'note', 'listened':listened, 
+            'note':{'text':text,'images':{'small':'', 'medium':'', 'large':'', 'extraLarge':''} } }
 
+def make_song_post_dict(user_id, access_token, listened=False, song_name="Too Soon To Tell", artist="Todd Snider", album="Agnostic Hymns & Stoner Fables"):
+        return {'fromUser':{'userID':user_id,'accessToken':access_token},
+                        'type':'song', 'listened':listened, 'song':{'name':song_name,'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}, 'artist':{'name':artist, 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}, 'album':{'name':album}}}
+
+
+
+class TestView(unittest.TestCase):
     def setUp(self):
         """Before each test, set up a blank database"""
 
@@ -39,210 +52,361 @@ class HighLevelTests(unittest.TestCase):
         self.logout()
         pass
 
-    def login(self, full_name, fb_id):
-        views.fb_user_is_valid = MagicMock(return_value=True)
-        request_json = {'accessToken':'abc', 'fbId':fb_id, 'fullName':full_name, 'imageLink':'foo'}
-        resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
+    @patch('queue_app.views.fb_user_is_valid')
+    def login(self, user_dict, fb_user_is_valid):
+        fb_user_is_valid.return_value = True
+        resp = self.app.post('/login', data=json.dumps(user_dict), content_type='application/json')
         return json.loads(resp.data)
+
+    def login_and_get_user_id(self, user_dict):
+        return self.login(user_dict)['userID']
 
     def logout(self):
         return self.app.get('/logout')
 
-    def test_login(self):
-        json_user = self.login('satshabad', '456')
+
+class TestLogin(TestView):
+
+    def it_logs_the_user_in(self):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+
         user = self.db.session.query(User).one()
 
-        self.assertEqual(json_user['userID'], user.id)
-        self.assertEqual(user.fb_id, 456)
-        self.assertEqual(user.fullname, 'satshabad')
-        self.assertEqual(user.image_link, 'foo')
+        self.assertEqual(user_id, user.id)
+        self.assertEqual(user.fb_id, user_dict['fbId'])
+        self.assertEqual(user.fullname, user_dict['fullName'])
+        self.assertEqual(user.image_link, user_dict['imageLink'])
 
-        self.assertEqual(self.db.session.query(User).one().fullname, 'satshabad')
-        self.assertEqual(self.db.session.query(User).one().fb_id,456)
-
-    def test_logout_when_not_logged_in(self):
+    def it_returns_401_when_logging_out_if_not_logged_in(self):
         resp =  self.app.get('/logout')
-        self.assertEqual(resp.status_code, 401)
 
-    def test_logout(self):
-        views.fb_user_is_valid = MagicMock(return_value=True)
-        request_json = {'accessToken':'abc', 'fbId':'456', 'fullName':'satshabad', 'imageLink':'foo'}
-        resp = self.app.post('/login', data=json.dumps(request_json), content_type='application/json')
+        expect(resp.status_code) == 401
+
+    def it_logs_out_a_logged_in_user(self):
+        user_dict = make_user_post_dict()
+        user_response = self.login(user_dict)
 
         resp =  self.app.get('/logout')
 
+        expect(resp.status_code) == 200
+
         resp =  self.app.get('/logout')
-        self.assertEqual(resp.status_code, 401)
+        expect(resp.status_code) == 401
 
 
-    def test_try_to_post_to_bad_user(self):
-        json_user = self.login('satshabad', '456')
+class TestEnqueue(TestView):
 
-        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah','images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''} } }
+    def it_returns_404_when_trying_to_enqueue_for_non_user(self):
+        user_dict = make_user_post_dict()
+        user_response = self.login(user_dict)
         
-        resp = self.app.post('user/%s/queue' % 4,  data=json.dumps(item_json), content_type='application/json')
+        note_item_dict = make_note_post_dict(user_response['userID'], user_dict['accessToken'])
+         
+        resp = self.app.post('user/%s/queue' % user_response['userID'] + str(1),  data=json.dumps(note_item_dict), content_type='application/json')
 
-        self.assertEqual(resp.status_code, 404)
+        expect(resp.status_code) == 404
 
+    def it_returns_401_when_the_user_is_not_logged_in(self):
 
-    def test_try_to_make_unauthorized_post(self):
-        json_user_old = self.login('satshabad', '456')
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
         resp = self.logout()
-        json_user = self.login('fateh', '123')
 
-        item_json = {'fromUser':{'userID':json_user_old['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}}
+        item_dict = make_note_post_dict(user_id, user_dict['accessToken'])
         
-        resp = self.app.post('user/%s/queue' % json_user['userID'],  data=json.dumps(item_json),
+        resp = self.app.post('user/%s/queue' % user_id,  data=json.dumps(item_dict),
                                 content_type='application/json')
 
-        self.assertEqual(resp.status_code, 403)
+        expect(resp.status_code) == 401
+
+
+    @patch('queue_app.views.is_friends')
+    def it_returns_403_when_user_is_unauthorized(self, is_friends):
+
+        is_friends.return_value = True
+
+        user_dict_1 = make_user_post_dict()
+        user_id_1 = self.login_and_get_user_id(user_dict_1)
+
+        resp = self.logout()
+
+        user_dict_2 = make_user_post_dict(full_name='fateh', access_token='xyz', fb_id=984)
+        user_id_2 = self.login_and_get_user_id(user_dict_2)
+
+        item_dict = make_note_post_dict(user_id_1, user_dict_1['accessToken'])
+        
+        resp = self.app.post('user/%s/queue' % user_id_1,  data=json.dumps(item_dict),
+                                content_type='application/json')
+
+        expect(resp.status_code) == 403
+
+    @patch('queue_app.views.is_friends')
+    def it_returns_403_when_two_users_are_not_friends(self, is_friends):
+
+        is_friends.return_value = False
+
+        user_dict_1 = make_user_post_dict()
+        user_id_1 = self.login_and_get_user_id(user_dict_1)
+
+        resp = self.logout()
+
+        user_dict_2 = make_user_post_dict(full_name='fateh', access_token='xyz', fb_id=984)
+        user_id_2 = self.login_and_get_user_id(user_dict_2)
+
+        item_dict = make_note_post_dict(user_id_2, user_dict_2['accessToken'])
+        
+        resp = self.app.post('user/%s/queue' % user_id_1,  data=json.dumps(item_dict),
+                                content_type='application/json')
+
+        expect(resp.status_code) == 403
+
     
-    @patch('queue_app.views.Linker.spotify_song')
     @patch('queue_app.views.Linker.grooveshark')
-    def test_add_song_to_queue(self, spotify_song, grooveshark):
+    @patch('queue_app.views.is_friends')
+    @patch('queue_app.views.Linker.spotify_song')
+    def it_adds_a_song_to_my_queue(self, spotify_song, is_friends, grooveshark):
         spotify_song.return_value = "Some spotify link"
         grooveshark.return_value = "Some grooveshark link"
+        is_friends.return_value = True
 
-        json_user = self.login('satshabad', '456')
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+        song_dict = make_song_post_dict(user_id, user_dict['accessToken'])
 
-        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'song', 'listened':'false', 'song':{'name':'Too Soon to Tell','images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}, 'artist':{'name':'Todd Snider', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}, 'album':{'name':'Agnostic Hymns & Stoner Fables'}}}
-
-
-        views.is_friends = MagicMock(return_value=True)
-        self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
+        self.app.post('user/%s/queue' % user_id, data=json.dumps(song_dict), content_type='application/json')
 
         queue_item = self.db.session.query(QueueItem).one()
 
-        self.assertEqual(queue_item.queued_by_user.id, json_user['userID'])
-        self.assertEqual(queue_item.user.id, json_user['userID'])
-        self.assertEqual(queue_item.listened, False)
+        expect(queue_item.queued_by_user.id) == user_id 
+        expect(queue_item.user.id) == user_id 
+        expect(queue_item.listened) == False
+        expect(queue_item.urls.grooveshark_url) ==  "Some grooveshark link"
+        expect(queue_item.urls.spotify_url) == "Some spotify link"
 
-        note_item = self.db.session.query(SongItem).one()
+        song_item = self.db.session.query(SongItem).one()
+        expect(queue_item.id) == song_item.id
+        expect(song_item.name) == song_dict['song']['name']
 
-        self.assertEqual(queue_item.id, note_item.id)
+        expect(song_item.artist.name) == song_dict['song']['artist']['name']
+        expect(song_item.album.name) == song_dict['song']['album']['name']
 
+    @patch('queue_app.views.Linker.grooveshark')
+    @patch('queue_app.views.is_friends')
+    @patch('queue_app.views.Linker.spotify_song')
+    def it_adds_a_song_to_my_friends_queue(self, spotify_song, is_friends, grooveshark):
+        spotify_song.return_value = "Some spotify link"
+        grooveshark.return_value = "Some grooveshark link"
+        is_friends.return_value = True
 
-    def test_add_item_to_queue(self):
-        json_user = self.login('satshabad', '456')
+        user_dict_other = make_user_post_dict()
+        user_id_other = self.login_and_get_user_id(user_dict_other)
 
-        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}}
+        self.logout()
 
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+        song_dict = make_song_post_dict(user_id, user_dict['accessToken'])
 
-        views.is_friends = MagicMock(return_value=True)
-        self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
+        self.app.post('user/%s/queue' % user_id_other, data=json.dumps(song_dict), content_type='application/json')
 
         queue_item = self.db.session.query(QueueItem).one()
 
-        self.assertEqual(queue_item.queued_by_user.id, json_user['userID'])
-        self.assertEqual(queue_item.user.id, json_user['userID'])
-        self.assertEqual(queue_item.listened, False)
+        expect(queue_item.queued_by_user.id) == user_id 
+        expect(queue_item.user.id) == user_id 
+        expect(queue_item.listened) == False
+        expect(queue_item.urls.grooveshark_url) ==  "Some grooveshark link"
+        expect(queue_item.urls.spotify_url) == "Some spotify link"
+
+        song_item = self.db.session.query(SongItem).one()
+        expect(queue_item.id) == song_item.id
+        expect(song_item.name) == song_dict['song']['name']
+
+        expect(song_item.artist.name) == song_dict['song']['artist']['name']
+        expect(song_item.album.name) == song_dict['song']['album']['name']
+
+    @patch('queue_app.views.is_friends')
+    def it_adds_a_note_to_my_queue(self, is_friends):
+
+        is_friends.return_value = True
+
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
+
+
+        self.app.post('user/%s/queue' %  user_id, data=json.dumps(note_dict), content_type='application/json')
+
+        queue_item = self.db.session.query(QueueItem).one()
+
+        expect(queue_item.queued_by_user.id) == user_id 
+        expect(queue_item.user.id) == user_id 
+        expect(queue_item.listened) == False
+        expect(queue_item.urls.grooveshark_url) ==  ""
+        expect(queue_item.urls.spotify_url) == ""
 
         note_item = self.db.session.query(NoteItem).one()
+        expect(queue_item.id) == note_item.id
+        expect(note_item.text) == note_dict['note']['text']
 
-        self.assertEqual(queue_item.id, note_item.id)
+    @patch('queue_app.views.is_friends')
+    def it_adds_an_item_by_facebook_id(self, is_friends):
 
-    def test_get_queue(self):
-        json_user = self.login('satshabad', '456')
+        is_friends.return_value = True
 
-        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':'','extraLarge':'' }}}
+        user_dict = make_user_post_dict(fb_id=123)
+        user_id = self.login_and_get_user_id(user_dict)
 
-        self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
 
-        resp = self.app.get('user/%s/queue' % json_user['userID'])
-    
-        self.assertIn("queue", resp.data)
-        self.assertIn("items", resp.data)
-        self.assertIn("blah", resp.data)
-         
+        resp = self.app.post('fbuser/%s/queue' % user_dict['fbId'], data=json.dumps(note_dict), content_type='application/json')
 
-    def test_delete_item_from_queue(self):
-        json_user = self.login('satshabad', '456')
-
-        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}}
-
-        self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
-
-        resp = self.app.get('user/%s/queue' % json_user['userID'])
-
-        null = None
-        queue_items = json.loads(resp.data)
-        
-        item_id = queue_items['queue']['items'][0]['itemId']
-    
-        resp = self.app.delete('user/%s/queue/%s' % (json_user['userID'], item_id))
-
-        self.assertEqual(self.db.session.query(QueueItem).all(), [])
-        self.assertEqual(self.db.session.query(NoteItem).all(), [])
-
-    def test_additem_to_queue_by_fbid(self):
-        json_user = self.login('satshabad', '456')
-
-        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}}
-
-        self.app.post('fbuser/%s/queue' % 123, data=json.dumps(item_json), content_type='application/json')
+        expect(resp.status_code) == 200
 
         queue_item = self.db.session.query(QueueItem).one()
 
-        self.assertEqual(queue_item.queued_by_user.id, json_user['userID'])
-        self.assertEqual(queue_item.user.fb_id, 123)
-        self.assertEqual(self.db.session.query(User).filter(User.fb_id==456).one().fb_id, 456)
+        expect(queue_item.queued_by_user.id) == user_id
+        expect(queue_item.user.fb_id) == user_dict['fbId']
 
-    def test_mark_item_listened(self):
-        json_user = self.login('satshabad', '456')
 
-        item_json = {'fromUser':{'userID':json_user['userID'],'accessToken':'abc'},
-                        'type':'note', 'listened':'false', 'note':{'text':'blah', 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}}
+class TestGetQueue(TestView):
 
-        self.app.post('user/%s/queue' % json_user['userID'], data=json.dumps(item_json), content_type='application/json')
-        resp = self.app.get('user/%s/queue' % json_user['userID'])
+    def it_returns_the_queue_in_the_right_order(self):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
 
-        null = None
-        queue_items = json.loads(resp.data)
+        note_dict_1 = make_note_post_dict(user_id, user_dict['accessToken'], text="item 1")
+        note_dict_2 = make_note_post_dict(user_id, user_dict['accessToken'], text="item 2")
+        note_dict_3 = make_note_post_dict(user_id, user_dict['accessToken'], text="item 3")
+
+        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict_1), content_type='application/json')
+        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict_2), content_type='application/json')
+        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict_3), content_type='application/json')
+
+        note_item_3 = self.db.session.query(NoteItem).filter(NoteItem.text == "item 3").one()
+        note_item_3.queue_item.date_queued = 1000
+        self.db.session.add(note_item_3)
+        self.db.session.commit()
+
+        note_item_2 = self.db.session.query(NoteItem).filter(NoteItem.text == "item 2").one()
+        note_item_2.queue_item.listened = True 
+        self.db.session.add(note_item_2)
+        self.db.session.commit()
+
+        resp = self.app.get('user/%s/queue' % user_id)
+
+        data = json.loads(resp.data)
+        expect(data).contains("queue")
+        expect(data["queue"]).contains("items")
+
+        expect(data["queue"]['items'][0]['note']['text']) == "item 1"
+        expect(data["queue"]['items'][1]['note']['text']) == "item 3"
+        expect(data["queue"]['items'][2]['note']['text']) == "item 2"
+
+   
+class TestDeleteQueueItem(TestView):
+
+    def it_deletes_an_items_from_the_queue(self):
+
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
+
+        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict), content_type='application/json')
+    
         
-        item_id = queue_items['queue']['items'][0]['itemId']
+        note_item_id = self.db.session.query(QueueItem).one().id
+
+        resp = self.app.delete('user/%s/queue/%s' % (user_id, note_item_id))
+
+        expect(self.db.session.query(QueueItem).all()) == []
+        expect(self.db.session.query(NoteItem).all()) == []
+
+    def it_returns_403_when_tries_to_delete_someone_elses_item(self):
+
+        user_dict = make_user_post_dict()
+        user_id_1 = self.login_and_get_user_id(user_dict)
+
+        note_dict = make_note_post_dict(user_id_1, user_dict['accessToken'])
+
+        self.app.post('user/%s/queue' % user_id_1,  data=json.dumps(note_dict), content_type='application/json')
     
-        item_json['listened'] = 'true'
- 
-        resp = self.app.put('user/%s/queue/%s' % (json_user['userID'], item_id),
-                            data=json.dumps(item_json), content_type='application/json')
+        self.logout()
 
-        self.assertEqual(self.db.session.query(QueueItem).one().listened, True)
+        user_dict = make_user_post_dict(fb_id=908, full_name='fateh', access_token='xyz')
+        user_id_2 = self.login_and_get_user_id(user_dict)
+        
+        note_item_id = self.db.session.query(QueueItem).one().id
 
-    def test_add_lastfm_user_name(self):
-        json_user = self.login('satshabad', '456')
+        resp = self.app.delete('user/%s/queue/%s' % (user_id_1, note_item_id))
 
-        data = {'lastFMUsername':'satshabad'}
-        resp = self.app.put('user/%s' % json_user['userID'], data=json.dumps(data), content_type='application/json')
-        self.assertEqual(json.loads(resp.data)['userID'], json_user['userID'])
-        self.assertEqual(self.db.session.query(User).one().lastfm_name, 'satshabad')
+        expect(resp.status_code) == 403
+        expect(len(self.db.session.query(QueueItem).all())) == 1
 
-    def test_return_404_for_bad_queue_item(self):
-        json_user = self.login('satshabad', '456')
+class TestUpdateQueueItem(TestView):
 
+    def it_returns_403_when_tries_to_update_someone_elses_item(self):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
 
-        resp = self.app.delete('user/%s/queue/1' % json_user['userID'])
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
 
-        self.assertEqual(resp.status_code, 404)
-    
-    @patch('queue_app.views.requests', MagicMock())
-    @patch('queue_app.views.LastFMer')
-    def test_get_listens(self, LastFMer):
+        resp = self.app.post('user/%s/queue' % user_id, data=json.dumps(note_dict), content_type='application/json')
+        self.logout() 
+        user_dict_2 = make_user_post_dict(fb_id=908, full_name='fateh', access_token='xyz')
+        self.login(user_dict_2)
 
-        json_user = self.login('satshabad', '456')
+        item_id = json.loads(resp.data)['itemId'] 
+        note_dict['listened'] = 1
+        
+        resp = self.app.put('user/%s/queue/%s' % (user_id, item_id),  data=json.dumps(note_dict), content_type='application/json')
 
-        data = {'lastFMUsername':'satshabad'}
-        resp = self.app.put('user/%s' % json_user['userID'], data=json.dumps(data), content_type='application/json')
-        LastFMer.get_user_listens.return_value = {'tracks':[]}
-        resp = self.app.get('user/%s/listens' % json_user['userID'])
+        expect(resp.status_code) == 403
+        expect(self.db.session.query(QueueItem).get(item_id).listened) == False
 
- 
+    def it_marks_an_item_as_listened(self):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
+
+        resp = self.app.post('user/%s/queue' % user_id, data=json.dumps(note_dict), content_type='application/json')
+
+        item_id = json.loads(resp.data)['itemId'] 
+        note_dict['listened'] = 1
+        
+        self.app.put('user/%s/queue/%s' % (user_id, item_id),  data=json.dumps(note_dict), content_type='application/json')
+
+        note_item_id = self.db.session.query(QueueItem).one().id
+
+        expect(self.db.session.query(QueueItem).get(note_item_id).listened) == True
+
+class TestUpdateUser(TestView):
+
+    def it_returns_403_when_updating_a_different_user(self):
+        user_dict_1 = make_user_post_dict()
+        user_id_1 = self.login_and_get_user_id(user_dict_1)
+
+        self.logout() 
+        user_dict_2 = make_user_post_dict(fb_id=908, full_name='fateh', access_token='xyz')
+        self.login(user_dict_2)
+
+        user_dict_1['lastFMUsername'] = 'satshabad'
+
+        resp = self.app.put('user/%s' % user_id_1,  data=json.dumps(user_dict_1), content_type='application/json')
+        expect(resp.status_code) == 403
+
+    def it_adds_the_last_fm_name_to_the_user(self):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+
+        user_dict['lastFMUsername'] = 'ssk'
+
+        resp = self.app.put('user/%s' % user_id,  data=json.dumps(user_dict), content_type='application/json')
+
+        expect(resp.status_code) == 200
+        expect(self.db.session.query(User).one().lastfm_name) == "ssk"
 
 
 if __name__ == '__main__':
