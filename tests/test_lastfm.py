@@ -174,20 +174,21 @@ class LastfmerSpec(unittest.TestCase):
                         }
                     }"""))
 
-        expect(new_data[0]).contains('images')
-        expect(new_data[0]['images']).contains('small')
-        expect(new_data[0]['images']).contains('medium')
-        expect(new_data[0]['images']).contains('large')
-        expect(new_data[0]['images']).contains('extraLarge')
-
         expect(new_data[0]).contains('song')
         expect(new_data[0]['song']).contains('name')
 
-        expect(new_data[0]).contains('artist')
-        expect(new_data[0]['artist']).contains('name')
-        expect(new_data[0]['artist']).contains('images')
+        expect(new_data[0]['song']).contains('images')
+        expect(new_data[0]['song']['images']).contains('small')
+        expect(new_data[0]['song']['images']).contains('medium')
+        expect(new_data[0]['song']['images']).contains('large')
+        expect(new_data[0]['song']['images']).contains('extraLarge')
 
-        expect(new_data[0]).contains('album')
+ 
+        expect(new_data[0]['song']).contains('artist')
+        expect(new_data[0]['song']['artist']).contains('name')
+        expect(new_data[0]['song']['artist']).contains('images')
+
+        expect(new_data[0]['song']).contains('album')
 
         expect(new_data[0]).contains('listeners')
 
