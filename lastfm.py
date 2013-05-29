@@ -78,8 +78,11 @@ class LastFMer():
             new_track = {}
 
             new_track['images'] = LastFMer.parse_images(track)
-            new_track['name'] = track['name']
-            new_track['artist'] = {'name':track['artist']}
+            new_track['song'] = {}
+            new_track['album'] = {}
+            new_track['song']['name'] = track['name']
+            new_track['artist'] = {'name':track['artist'], 'images':{}}
+            new_track['listeners'] = track['listeners']
 
             tracks.append(new_track)
 
@@ -104,9 +107,10 @@ class LastFMer():
         for artist in data['results']['artistmatches']['artist']:
             new_artist = {}
 
-            new_artist['images'] = LastFMer.parse_images(artist)
             new_artist['listeners'] = artist['listeners']
-            new_artist['name'] = artist['name']
+            new_artist['artist'] = {}
+            new_artist['artist']['name'] = artist['name']
+            new_artist['artist']['images'] = LastFMer.parse_images(artist)
 
             artists.append(new_artist)
 

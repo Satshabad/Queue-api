@@ -173,14 +173,23 @@ class LastfmerSpec(unittest.TestCase):
                             }
                         }
                     }"""))
+
         expect(new_data[0]).contains('images')
         expect(new_data[0]['images']).contains('small')
         expect(new_data[0]['images']).contains('medium')
         expect(new_data[0]['images']).contains('large')
         expect(new_data[0]['images']).contains('extraLarge')
-        expect(new_data[0]).contains('name')
+
+        expect(new_data[0]).contains('song')
+        expect(new_data[0]['song']).contains('name')
+
         expect(new_data[0]).contains('artist')
         expect(new_data[0]['artist']).contains('name')
+        expect(new_data[0]['artist']).contains('images')
+
+        expect(new_data[0]).contains('album')
+
+        expect(new_data[0]).contains('listeners')
 
     @patch('queue_app.lastfm.LastFMer.format_artist_search_data')
     @patch('queue_app.lastfm.requests')
@@ -244,8 +253,13 @@ class LastfmerSpec(unittest.TestCase):
 
                 }"""))
 
-        expect(new_data[0]).contains('images')
-        expect(new_data[0]).contains('name')
+        expect(new_data[0]).contains('artist')
+        expect(new_data[0]['artist']).contains('name')
+        expect(new_data[0]['artist']).contains('images')
+        expect(new_data[0]['artist']['images']).contains('small')
+        expect(new_data[0]['artist']['images']).contains('medium')
+        expect(new_data[0]['artist']['images']).contains('large')
+        expect(new_data[0]['artist']['images']).contains('extraLarge')
         expect(new_data[0]).contains('listeners')
 
 
