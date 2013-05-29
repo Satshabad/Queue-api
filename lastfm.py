@@ -79,7 +79,6 @@ class LastFMer():
 
             new_track['images'] = LastFMer.parse_images(track)
             new_track['name'] = track['name']
-            new_track['images'] = track.get('images', {})
             new_track['artist'] = {'name':track['artist']}
 
             tracks.append(new_track)
