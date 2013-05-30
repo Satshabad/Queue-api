@@ -205,9 +205,9 @@ class TestEnqueue(TestView):
         self.logout()
 
         user_dict = make_user_post_dict()
+        user_dict['fbId'] = 3666635
         user_id = self.login_and_get_user_id(user_dict)
         song_dict = make_song_post_dict(user_id, user_dict['accessToken'])
-
         self.app.post('user/%s/queue' % user_id_other, data=json.dumps(song_dict), content_type='application/json')
 
         queue_item = self.db.session.query(QueueItem).one()
