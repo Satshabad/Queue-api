@@ -23,6 +23,7 @@ class User(db.Model):
     fullname = Column(String)
     image_link = Column(String)
     access_token = Column(String)
+    device_token = Column(String)
 
     def is_authenticated(self):
        return True 

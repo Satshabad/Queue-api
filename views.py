@@ -112,7 +112,8 @@ def get_friends(user_id):
 @login_required
 def change_user(user_id):
     args = request.json
-    lastfm_name = args['lastFMUsername']
+    lastfm_name = args.get('lastFMUsername', None)
+    device_token = args.get('deviceToken', None)
 
     user = get_user(user_id)
 
@@ -122,7 +123,11 @@ def change_user(user_id):
     if not user:
         return '', 404
 
-    user.lastfm_name = lastfm_name
+    if lastfm_name:
+        user.lastfm_name = lastfm_name
+
+    if device_token:
+        user.device_token = device_token
 
     db.session.add(user)
     db.session.commit()
