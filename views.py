@@ -150,7 +150,12 @@ def login():
 
     if not user:
         user = User(fb_id=fb_id, access_token=access_token,
-                fullname=args['fullName'], image_link=args['imageLink'])
+                    fullname=args['fullName'], 
+                    image_link=args['imageLink'], 
+                    badge_setting=args.get('badgeSetting'),
+                    device_token=args.get('deviceToken'),
+                    badge_num=0)
+
 
         db.session.add(user)
         db.session.commit()
@@ -198,9 +203,26 @@ def delete_queue_item(user_id, item_id):
 
     queue_item = queue_item.one()
 
+    was_shared = queue_item.queued_by_id != queue_item.user_id
+    was_listened = queue_item.listened
+
     item_type, item = queue_item.get_item()
     db.session.delete(item)
     db.session.delete(queue_item)
+
+    if user.badge_setting == "unlistened":
+        if not was_listened:
+            user.badge_num -= 1
+
+            send_push_message(user.device_token, user.badge_num)
+
+    if user.badge_setting == "shared":
+        if not was_listened and was_shared:
+            user.badge_num -= 1
+
+            send_push_message(user.device_token, user.badge_num)
+
+    db.session.add(user)
     db.session.commit()
 
     return jsonify({'status': 'OK'})
@@ -218,9 +240,33 @@ def change_queue_item(user_id, item_id):
     item = db.session.query(QueueItem)\
         .filter(QueueItem.user_id == user.id)\
         .filter(QueueItem.id == item_id).one()
-
+    
+    was_listened = item.listened
+    was_shared = item.queued_by_id != item.user_id
     item.listened = listened
     db.session.add(item)
+
+    if user.badge_setting == "unlistened":
+        if listened and not was_listened:
+            user.badge_num -= 1
+            send_push_message(user.device_token, user.badge_num)
+
+        if not listened and was_listened:
+            user.badge_num += 1
+            send_push_message(user.device_token, user.badge_num)
+
+    if user.badge_setting == "shared":
+        if was_shared:
+            if listened and not was_listened:
+                user.badge_num -= 1
+                send_push_message(user.device_token, user.badge_num)
+
+            if not listened and was_listened:
+                user.badge_num += 1
+                send_push_message(user.device_token, user.badge_num)
+
+    db.session.add(user)
+
     db.session.commit()
 
     return jsonify({'status': 'OK'})
@@ -277,7 +323,7 @@ def enqueue_item(user_id):
     
     orm_queue_item = QueueItem(user=to_user,queued_by_user=from_user,
                         urls=None,
-                        listened=True if queue_item['listened'] == 'true' else False,
+                        listened=False,
                         date_queued=calendar.timegm(datetime.datetime.utcnow().utctimetuple()))
 
 
@@ -340,7 +386,21 @@ def enqueue_item(user_id):
         orm_queue_item.note_item = [orm_note]
         db.session.add_all([orm_note, orm_queue_item, orm_urls])
 
+
+    if from_user.id != to_user.id and to_user.badge_setting == "shared":
+        to_user.badge_num += 1
+        send_push_message(to_user.device_token,
+                          "%s shared a %s with you" % (from_user.fullname, queue_item['type']), 
+                          to_user.badge_num, 
+                          from_user.fullname, queue_item['type'])
+
+    if from_user.id == to_user.id and to_user.badge_setting == "unlistened":
+        to_user.badge_num += 1
+        send_push_message(to_user.device_token, to_user.badge_num)
+
+    db.session.add(to_user)
     db.session.commit()
+        
 
     return jsonify(orm_queue_item.dictify())
 
@@ -417,7 +477,25 @@ def get_fb_friends(fb_id, access_token):
 
     friends = resp.json()['data']
     return friends
-    
+
+from apnsclient import Session, Message, APNs
+
+def send_push_message(token, badge_num=None, user_name=None, message=None):
+
+    con = Session.new_connection(("gateway.push.apple.com", 2195), cert_file="cert.pem", passphrase="this is the queue push key")
+    message_packet = Message(token, alert=message, badge=badge_num, user=user_name)
+
+    srv = APNs(con)
+    res = srv.send(message_packet)
+
+    # Check failures. Check codes in APNs reference docs.
+    for token, reason in res.failed.items():
+        code, errmsg = reason
+
+    if res.needs_retry():
+        retry_message = res.retry()
+        res = srv.send(retry_message)
+        
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)

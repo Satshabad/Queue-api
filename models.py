@@ -24,6 +24,8 @@ class User(db.Model):
     image_link = Column(String)
     access_token = Column(String)
     device_token = Column(String)
+    badge_setting = Column(String)
+    badge_num = Column(Integer)
 
     def is_authenticated(self):
        return True 
