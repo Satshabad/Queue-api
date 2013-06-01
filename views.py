@@ -480,10 +480,10 @@ def get_fb_friends(fb_id, access_token):
 
 from apnsclient import Session, Message, APNs
 
-def send_push_message(token, badge_num=None, user_name=None, message=None):
+def send_push_message(token, badge_num=None, user_name=None, message=None, type_of=None):
 
     con = Session.new_connection(("gateway.push.apple.com", 2195), cert_file="cert.pem", passphrase="this is the queue push key")
-    message_packet = Message(token, alert=message, badge=badge_num, user=user_name)
+    message_packet = Message(token, alert=message, badge=badge_num, user=user_name, itemType=type_of)
 
     srv = APNs(con)
     res = srv.send(message_packet)
