@@ -46,18 +46,6 @@ def support_jsonp(f):
             return f(*args, **kwargs)
     return decorated_function
 
-@app.route('/db/destroy')
-def destroy_db():
-    os.remove(app.config['DATABASE_FILE'])
-    return 'so it is'
-
-
-@app.route('/db/create')
-def create_db():
-    import init_db
-    init_db.init_db()
-    return 'so it is'
-
 @app.route('/search/<search_text>', methods=['GET'])
 @support_jsonp
 def search(search_text):
@@ -94,18 +82,6 @@ def get_listens(user_id):
 @support_jsonp
 def home():
     return jsonify({"hello":"there"})
-
-@app.route('/user/<user_id>/friends', methods=['GET'])
-@support_jsonp
-@login_required
-def get_friends(user_id):
-    args = request.values
-    access_token = args['accessToken']
-    user = get_user(user_id)
-
-    raise NotImplementedError
-
-    return jsonify({})
 
 @app.route('/user/<user_id>', methods=['PUT'])
 @support_jsonp
@@ -408,7 +384,6 @@ def enqueue_item(user_id):
 
     return jsonify(orm_queue_item.dictify())
 
-
 def get_user(user_id):
     return db.session.query(User).get(user_id)
 
@@ -444,43 +419,6 @@ def is_friends(user_id_1, user_id_2, access_token):
         return False
 
     return True
-
-def get_spotify_link_for_song(song):
-    search_text = " ".join([song['name'], song['artist']['name'],
-                           song['album']['name']])
-    resp = requests.get("%s/search/1/track.json?q=%s" % (SP_API_URL, search_text))
-
-    app.logger.warning(resp.status_code)
-    if resp.status_code != 200 or not resp.json()['tracks']:
-       return None
-
-    link = resp.json()['tracks'][0]['href']
-    return link
-
-def get_spotify_link_for_artist(artist):
-    search_text = artist['name']
-    resp = requests.get("%s/search/1/artist.json?q=%s" % (SP_API_URL, search_text))
-    link = resp.json()['artists'][0]['href']
-    return link
-
-def get_grooveshark_link(text):
-    text_words = "+".join(text.split(" ")) 
-    link = requests.get('%s/a/%s?format=json&key=%s' % (TS_API_URL, text_words, TS_API_KEY))
-
-    if not link.json():
-        return None
-    
-    return link.json()
-
-
-def get_fb_friends(fb_id, access_token):
-    resp = requests.get("%s/%s/friends?limit=5000&access_token=%s" %
-                            (FB_API_URL, fb_id, access_token))
-    if 'data' not in resp.json():
-        return None
-
-    friends = resp.json()['data']
-    return friends
 
 from apnsclient import Session, Message, APNs
 
