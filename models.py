@@ -43,8 +43,8 @@ class User(db.Model):
         return {'userID':self.id,
                 'facebookId':self.fb_id,
                 'fullName':self.fullname,
-                'badgeSetting':badge_setting,
-                "badgeSetting":badge_num,
+                'badgeSetting':self.badge_setting,
+                "badge":self.badge_num,
                 'image':self.image_link,
                 'lastFMUsername':self.lastfm_name}
 
