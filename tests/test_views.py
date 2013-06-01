@@ -307,7 +307,7 @@ class TestEnqueue(TestView):
         orm_user = self.db.session.query(User).one()
         expect(orm_user.badge_num) == 1
 
-        send_push_message.assert_called_once_with(user_dict["deviceToken"], 1)
+        send_push_message.assert_called_once_with(user_dict["deviceToken"], badge_num=1)
 
     @patch('queue_app.views.send_push_message')
     @patch('queue_app.views.Linker.grooveshark')
@@ -334,7 +334,7 @@ class TestEnqueue(TestView):
         orm_user = self.db.session.query(User).get(user_id)
         expect(orm_user.badge_num) == 1
 
-        send_push_message.assert_called_once_with(user_dict_other['deviceToken'], '%s shared a note with you' % user_dict_other['fullName'], 1, user_dict_other['fullName'], 'note')
+        send_push_message.assert_called_once_with(user_dict_other['deviceToken'], message='%s shared a note with you' % user_dict_other['fullName'], badge_num=1, name=user_dict_other['fullName'], item_type='note')
 
     @patch('queue_app.views.send_push_message')
     @patch('queue_app.views.Linker.grooveshark')
@@ -457,7 +457,7 @@ class TestDeleteQueueItem(TestView):
 
         orm_user = self.db.session.query(User).one()
         expect(orm_user.badge_num) == 0
-        send_push_message.assert_called_once_with(user_dict['deviceToken'], orm_user.badge_num)
+        send_push_message.assert_called_once_with(user_dict['deviceToken'], badge_num=orm_user.badge_num)
 
     @patch('queue_app.views.send_push_message')
     def it_doesnt_send_push_with_new_badge_number_for_shared(self, send_push_message):
@@ -570,7 +570,7 @@ class TestUpdateQueueItem(TestView):
         orm_user = self.db.session.query(User).one()
 
         expect(orm_user.badge_num) == 0
-        send_push_message.assert_called_once_with(user_dict['deviceToken'], 0)
+        send_push_message.assert_called_once_with(user_dict['deviceToken'], badge_num=0)
 
     @patch('queue_app.views.send_push_message')
     def it_sends_push_notification_when_set_to_not_listened(self, send_push_message):
@@ -599,7 +599,7 @@ class TestUpdateQueueItem(TestView):
         orm_user = self.db.session.query(User).one()
 
         expect(orm_user.badge_num) == 2
-        send_push_message.assert_called_once_with(user_dict['deviceToken'], 2)
+        send_push_message.assert_called_once_with(user_dict['deviceToken'], badge_num=2)
 
 
 
