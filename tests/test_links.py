@@ -130,6 +130,10 @@ class LinkerSpec(unittest.TestCase):
 
         expect(link) == "http:\/\/tinysong.com\/Ypc9"
 
-        
+   
+    def it_parses_out_the_url(self):
+        text = "a string with a url http://google.com"
+        expect(Linker.parse_from_text(text)) == "http://google.com"
+          
 
     

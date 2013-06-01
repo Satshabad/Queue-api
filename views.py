@@ -384,7 +384,7 @@ def enqueue_item(user_id):
                             extra_large_image_link=media['images']['extraLarge'])
 
 
-        orm_urls = UrlsForItem(spotify_url="", grooveshark_url="")
+        orm_urls = UrlsForItem(other_url=Linker.parse_from_text(media['text']))
         orm_queue_item.urls = orm_urls
 
         orm_queue_item.note_item = [orm_note]
@@ -503,9 +503,4 @@ def send_push_message(token, message=None, badge_num=None, name=None,  item_type
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True, port=5000)
-
-
-
-
-
 

@@ -307,13 +307,14 @@ class UrlsForItem(db.Model):
     id = Column(Integer, primary_key=True)
     spotify_url = Column(String)
     grooveshark_url = Column(String)
-
+    other_url = Column(String)
 
 
     def dictify(self):
         return {
                 'spotify':self.spotify_url,
-                'grooveshark':self.grooveshark_url
+                'grooveshark':self.grooveshark_url,
+                'other':self.other_url
                 }
 
 

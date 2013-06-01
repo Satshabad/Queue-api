@@ -1,3 +1,4 @@
+import re
 import requests
 
 SP_API_URL = "http://ws.spotify.com"
@@ -47,5 +48,11 @@ class Linker():
             return None
     
         return link.json()
+    
+    @staticmethod
+    def parse_from_text(text):
+        match = re.search("(?P<url>https?://[^\s]+)", text)
+        if match:
+            return match.group("url")
 
-
+        return None

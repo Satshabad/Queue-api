@@ -266,8 +266,8 @@ class TestEnqueue(TestView):
         expect(queue_item.queued_by_user.id) == user_id 
         expect(queue_item.user.id) == user_id 
         expect(queue_item.listened) == False
-        expect(queue_item.urls.grooveshark_url) ==  ""
-        expect(queue_item.urls.spotify_url) == ""
+        expect(queue_item.urls.grooveshark_url) ==  None
+        expect(queue_item.urls.spotify_url) == None
 
         note_item = self.db.session.query(NoteItem).one()
         expect(queue_item.id) == note_item.id
