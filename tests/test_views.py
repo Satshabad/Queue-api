@@ -629,6 +629,64 @@ class TestUpdateUser(TestView):
         expect(resp.status_code) == 200
         expect(self.db.session.query(User).one().lastfm_name) == "ssk"
 
+    @patch('queue_app.views.send_push_message')
+    @patch('queue_app.views.is_friends')
+    def it_recalcs_the_badge_number_when_changed_to_unlistened(self, is_friends, send_push_message):
+
+        is_friends.return_value = True
+
+        user_dict = make_user_post_dict(badge_setting="shared")
+        user_id = self.login_and_get_user_id(user_dict)
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
+
+
+        self.app.post('user/%s/queue' %  user_id, data=json.dumps(note_dict), content_type='application/json')
+        self.app.post('user/%s/queue' %  user_id, data=json.dumps(note_dict), content_type='application/json')
+        self.app.post('user/%s/queue' %  user_id, data=json.dumps(note_dict), content_type='application/json')
+
+        user_dict['badgeSetting'] = "unlistened"
+        resp = self.app.put('user/%s' % user_id,  data=json.dumps(user_dict), content_type='application/json')
+
+        views.recalc_badge_num(user_id)
+        
+        orm_user = self.db.session.query(User).get(user_id)
+        expect(orm_user.badge_num) == 3
+
+    @patch('queue_app.views.send_push_message')
+    @patch('queue_app.views.is_friends')
+    def it_recalcs_the_badge_number_when_changed_to_shared(self, is_friends, send_push_message):
+
+        is_friends.return_value = True
+
+        user_dict = make_user_post_dict(badge_setting="unlistened")
+        user_id = self.login_and_get_user_id(user_dict)
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
+
+        self.app.post('user/%s/queue' %  user_id, data=json.dumps(note_dict), content_type='application/json')
+        self.logout()
+
+        user_dict_2 = make_user_post_dict(fb_id=3234234)
+        user_id_2 = self.login_and_get_user_id(user_dict_2)
+        note_dict = make_note_post_dict(user_id_2, user_dict['accessToken'])
+
+        self.app.post('user/%s/queue' %  user_id, data=json.dumps(note_dict), content_type='application/json')
+        self.app.post('user/%s/queue' %  user_id, data=json.dumps(note_dict), content_type='application/json')
+
+        self.logout()
+
+        user_id = self.login_and_get_user_id(user_dict)
+
+        user_dict['badgeSetting'] = "shared"
+        resp = self.app.put('user/%s' % user_id,  data=json.dumps(user_dict), content_type='application/json')
+
+        views.recalc_badge_num(user_id)
+        
+        orm_user = self.db.session.query(User).get(user_id)
+        expect(orm_user.badge_num) == 2
+
+
+
+ 
 
 if __name__ == '__main__':
     unittest.main()

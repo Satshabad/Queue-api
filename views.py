@@ -108,6 +108,7 @@ def change_user(user_id):
 
     if badge_setting:
         user.badge_setting = badge_setting
+        recalc_badge_num(user.id)
 
     db.session.add(user)
     db.session.commit()
@@ -419,6 +420,24 @@ def is_friends(user_id_1, user_id_2, access_token):
         return False
 
     return True
+
+def recalc_badge_num(user_id):
+
+    user = db.session.query(User).get(user_id)
+    user_items = db.session.query(QueueItem).filter(QueueItem.user_id==user.id)
+
+    if user.badge_setting == "unlistened":
+        user.badge_num = sum(map(lambda x: 0 if x.listened else 1, user_items))
+
+    if user.badge_setting == "shared":
+        user.badge_num = sum(map(lambda x: 1 if not x.listened and x.queued_by_id != user.id else 0, user_items))
+
+    if user.badge_setting == None:
+        user.badge_num = 0
+
+    db.session.add(user)
+    db.session.commit()
+
 
 from apnsclient import Session, Message, APNs
 
