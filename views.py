@@ -269,7 +269,7 @@ def change_queue_item(user_id, item_id):
 
     db.session.commit()
 
-    return jsonify({'status': 'OK'})
+    return jsonify(item.dictify())
 
 @app.route('/fbuser/<fb_id>/queue', methods=['POST'])
 @support_jsonp
