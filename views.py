@@ -218,13 +218,13 @@ def delete_queue_item(user_id, item_id):
         if not was_listened:
             user.badge_num -= 1
 
-            send_push_message(user.device_token, user.badge_num)
+            send_push_message(user.device_token, badge_num=user.badge_num)
 
     if user.badge_setting == "shared":
         if not was_listened and was_shared:
             user.badge_num -= 1
 
-            send_push_message(user.device_token, user.badge_num)
+            send_push_message(user.device_token, badge_num=user.badge_num)
 
     db.session.add(user)
     db.session.commit()
@@ -253,21 +253,21 @@ def change_queue_item(user_id, item_id):
     if user.badge_setting == "unlistened":
         if listened and not was_listened:
             user.badge_num -= 1
-            send_push_message(user.device_token, user.badge_num)
+            send_push_message(user.device_token, badge_num=user.badge_num)
 
         if not listened and was_listened:
             user.badge_num += 1
-            send_push_message(user.device_token, user.badge_num)
+            send_push_message(user.device_token, badge_num=user.badge_num)
 
     if user.badge_setting == "shared":
         if was_shared:
             if listened and not was_listened:
                 user.badge_num -= 1
-                send_push_message(user.device_token, user.badge_num)
+                send_push_message(user.device_token, badge_num=user.badge_num)
 
             if not listened and was_listened:
                 user.badge_num += 1
-                send_push_message(user.device_token, user.badge_num)
+                send_push_message(user.device_token, badge_num=user.badge_num)
 
     db.session.add(user)
 
@@ -394,13 +394,13 @@ def enqueue_item(user_id):
     if from_user.id != to_user.id and to_user.badge_setting == "shared":
         to_user.badge_num += 1
         send_push_message(to_user.device_token,
-                          "%s shared a %s with you" % (from_user.fullname, queue_item['type']), 
-                          to_user.badge_num, 
-                          from_user.fullname, queue_item['type'])
+                          message= "%s shared a %s with you" % (from_user.fullname, queue_item['type']), 
+                          badge_num=to_user.badge_num, 
+                          name=from_user.fullname, item_type=queue_item['type'])
 
     if from_user.id == to_user.id and to_user.badge_setting == "unlistened":
         to_user.badge_num += 1
-        send_push_message(to_user.device_token, to_user.badge_num)
+        send_push_message(to_user.device_token, badge_num=to_user.badge_num)
 
     db.session.add(to_user)
     db.session.commit()
@@ -484,10 +484,10 @@ def get_fb_friends(fb_id, access_token):
 
 from apnsclient import Session, Message, APNs
 
-def send_push_message(token, badge_num=None, user_name=None, message=None, type_of=None):
+def send_push_message(token, message=None, badge_num=None, name=None,  item_type=None):
 
     con = Session.new_connection(("gateway.push.apple.com", 2195), cert_file="cert.pem", passphrase="this is the queue push key")
-    message_packet = Message(token, alert=message, badge=badge_num, user=user_name, sound="default", itemType=type_of)
+    message_packet = Message(token, alert=message, badge=badge_num, user=name, sound="default", itemType=item_type)
 
     srv = APNs(con)
     res = srv.send(message_packet)
