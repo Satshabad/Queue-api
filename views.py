@@ -114,6 +114,7 @@ def change_user(user_id):
     args = request.json
     lastfm_name = args.get('lastFMUsername', None)
     device_token = args.get('deviceToken', None)
+    badge_setting = args.get('badgeSetting', None)
 
     user = get_user(user_id)
 
@@ -128,6 +129,9 @@ def change_user(user_id):
 
     if device_token:
         user.device_token = device_token
+
+    if badge_setting:
+        user.badge_setting = badge_setting
 
     db.session.add(user)
     db.session.commit()
