@@ -73,8 +73,14 @@ class LastFMer():
 
         if type(data['results']['trackmatches']) == type(u''):
             return tracks
+         
 
-        for track in data['results']['trackmatches']['track']:
+        if type(data['results']['trackmatches']['track']) == type([]):
+            old_tracks = data['results']['trackmatches']['track']
+        else:
+            old_tracks = [ data['results']['trackmatches']['track'] ]
+
+        for track in old_tracks:
             new_track = {}
 
             new_track['song'] = {}
