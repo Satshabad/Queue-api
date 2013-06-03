@@ -1,10 +1,6 @@
 import os
 import unittest
-import tempfile
-import difflib
-import pprint
 import json
-import sys
 
 import requests
 from expecter import expect
@@ -46,6 +42,7 @@ def make_song_post_dict(user_id, access_token, listened=False, song_name="Too So
 
 
 class TestView(unittest.TestCase):
+
     def setUp(self):
         """Before each test, set up a blank database"""
 
@@ -55,8 +52,6 @@ class TestView(unittest.TestCase):
         self.db = SQLAlchemy(app.app)
         init_db.init_db()
 
-        views.get_spotify_link_for_song =  MagicMock(return_value='dummylink')
-        views.get_grooveshark_link=  MagicMock(return_value='dummylink')
 
     def tearDown(self):
         self.logout()
@@ -402,7 +397,6 @@ class TestDeleteQueueItem(TestView):
         note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
 
         resp = self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict), content_type='application/json')
-        print resp        
 
         
         note_item_id = self.db.session.query(QueueItem).one().id
