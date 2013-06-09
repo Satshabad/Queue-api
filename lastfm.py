@@ -1,5 +1,6 @@
 import datetime
 import calendar
+from pprint import pprint
 
 import requests
 
@@ -7,6 +8,13 @@ LF_API_URL = "http://ws.audioscrobbler.com/2.0/?"
 LF_API_KEY = "7caf7bfb662c58f659df4446c7200f3c&"
 
 class LastFMer():
+
+    
+    @staticmethod
+    def complete_song(name, artist):
+        data = requests.get("%smethod=track.getInfo&track=%s&artist=%s&autocorrect=1&api_key=%sformat=json&extended=0" % (LF_API_URL, name, artist, LF_API_KEY)).json()
+
+        return LastFMer.parse_track(data['track'])
     
     @staticmethod
     def get_user_listens(lastfm_name):
@@ -21,30 +29,44 @@ class LastFMer():
 
         new_data['tracks'] = []
         for track in data['recenttracks']['track']:
-            new_track = {}
-
-            if track.has_key("date"):
-                new_track['dateListened'] = track["date"]['uts']
-            else:
-                new_track['dateListened'] = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
-   
-            new_track['type'] = 'lastFM'
-
-
-            new_track['song'] = {}
-            new_track['song']['name'] = track['name']
-            new_track['song']['images'] = LastFMer.parse_images(track)
-
-            new_track['song']['album'] = track['album']
-            new_track['song']['album'][u'name'] = track['album']['#text']
-
-            new_track['song']['artist'] = {}
-            new_track['song']['artist'] = track['artist']
-            new_track['song']['artist']['images'] = LastFMer.parse_images(track['artist'])
-
-            new_data['tracks'].append(new_track)
+            new_data['tracks'].append(LastFMer.parse_track(track))
 
         return new_data
+
+    @staticmethod
+    def parse_track(track):
+        new_track = {}
+
+        if track.has_key("date"):
+            new_track['dateListened'] = track["date"]['uts']
+        else:
+            new_track['dateListened'] = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
+
+        new_track['type'] = 'lastFM'
+
+
+        new_track['song'] = {}
+        new_track['song']['name'] = track['name']
+        if track.get('image', None):
+            new_track['song']['images'] = LastFMer.parse_images(track)
+        else:
+            new_track['song']['images'] = LastFMer.parse_images(track['album'])
+
+
+        new_track['song']['album'] = track['album']
+
+        if track['album'].get('#text', None):
+            new_track['song']['album'][u'name'] = track['album']['#text']
+        else:
+            new_track['song']['album'][u'name'] = track['album']['title']
+
+        new_track['song']['artist'] = {}
+        new_track['song']['artist'] = track['artist']
+        new_track['song']['artist']['images'] = LastFMer.parse_images(track['artist'])
+
+        return new_track
+
+
 
     @staticmethod
     def parse_images(data):

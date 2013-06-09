@@ -10,7 +10,27 @@ from queue_app import lastfm
 LastFMer = lastfm.LastFMer
 
 class LastfmerSpec(unittest.TestCase):
-    
+
+    def it_completes_the_song(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_completion.yaml'):
+            track = LastFMer.complete_song("Too soon to tell", "Todd Snider")
+
+        expect(track).contains('type')
+        expect(track).contains('dateListened')
+
+        expect(track).contains('song')
+
+        expect(track['song']).contains('images')
+
+        expect(track['song']).contains('artist')
+        expect(track['song']['artist']).contains('images')
+        expect(track['song']['artist']).contains('name')
+
+        expect(track['song']).contains('album')
+        expect(track['song']['album']).contains('name')
+
+
     def it_gets_the_users_listens(self):
 
         with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_listens.yaml'):
