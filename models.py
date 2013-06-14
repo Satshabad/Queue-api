@@ -41,7 +41,7 @@ class User(db.Model):
 
     def dictify(self):
         return {'userID':self.id,
-                'facebookId':self.fb_id,
+                'fbId':self.fb_id,
                 'fullName':self.fullname,
                 'badgeSetting':self.badge_setting,
                 "badge":self.badge_num,
