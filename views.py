@@ -100,13 +100,13 @@ def change_user(user_id):
     if not user:
         return '', 404
 
-    if lastfm_name:
+    if lastfm_name != None:
         user.lastfm_name = lastfm_name
 
-    if device_token:
+    if device_token != None:
         user.device_token = device_token
 
-    if badge_setting:
+    if badge_setting != None:
         user.badge_setting = badge_setting
         recalc_badge_num(user.id)
 
