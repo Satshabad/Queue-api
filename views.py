@@ -368,16 +368,23 @@ def enqueue_item(user_id):
         db.session.add_all([orm_note, orm_queue_item, orm_urls])
 
 
-    if from_user.id != to_user.id and to_user.badge_setting == "shared":
-        to_user.badge_num += 1
-        send_push_message(to_user.device_token,
+    if from_user.id != to_user.id and to_user.device_token:
+        if to_user.badge_setting == "shared":
+            to_user.badge_num += 1
+            send_push_message(to_user.device_token,
                           message= "%s shared a %s with you" % (from_user.fullname, queue_item['type']), 
                           badge_num=to_user.badge_num, 
+                          name=from_user.fullname, item_type=queue_item['type'])
+        else:
+            send_push_message(to_user.device_token,
+                          message= "%s shared a %s with you" % (from_user.fullname, queue_item['type']), 
                           name=from_user.fullname, item_type=queue_item['type'])
 
     if from_user.id == to_user.id and to_user.badge_setting == "unlistened":
         to_user.badge_num += 1
         send_push_message(to_user.device_token, badge_num=to_user.badge_num)
+
+    
 
     db.session.add(to_user)
     db.session.commit()
@@ -441,7 +448,7 @@ def recalc_badge_num(user_id):
 
 from apnsclient import Session, Message, APNs
 
-def send_push_message(token, message=None, badge_num=None, name=None,  item_type=None):
+def send_push_message(token, message=None, badge_num=0, name=None,  item_type=None):
 
     con = Session.new_connection(("gateway.push.apple.com", 2195), cert_file="cert.pem", passphrase="this is the queue push key")
     message_packet = Message(token, alert=message, badge=badge_num, user=name, sound="default", itemType=item_type)

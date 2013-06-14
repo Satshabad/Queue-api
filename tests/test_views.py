@@ -210,10 +210,11 @@ class TestEnqueue(TestView):
         expect(song_item.artist.name) == song_dict['song']['artist']['name']
         expect(song_item.album.name) == song_dict['song']['album']['name']
 
+    @patch('queue_app.views.send_push_message')
     @patch('queue_app.views.Linker.grooveshark')
     @patch('queue_app.views.is_friends')
     @patch('queue_app.views.Linker.spotify_song')
-    def it_adds_a_song_to_my_friends_queue(self, spotify_song, is_friends, grooveshark):
+    def it_adds_a_song_to_my_friends_queue(self, spotify_song, is_friends, grooveshark, send_push_message):
         spotify_song.return_value = "Some spotify link"
         grooveshark.return_value = "Some grooveshark link"
         is_friends.return_value = True
