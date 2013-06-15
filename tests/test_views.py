@@ -1,7 +1,9 @@
 import os
 import unittest
 import json
+from pprint import pprint
 
+import vcr
 import requests
 from expecter import expect
 
@@ -352,6 +354,25 @@ class TestEnqueue(TestView):
 
         expect(send_push_message.called) == False
 
+class TestListens(TestView):
+
+    @patch('queue_app.views.LastFMer')
+    @patch('queue_app.views.Twitterer')
+    def it_gets_the_listens(self, Twitterer, LastFMer):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+
+        user_dict['lastFMUsername'] = 'satshabad'
+        user_dict['twitterUsername'] = 'satshabad'
+
+        resp = self.app.put('user/%s' % user_id,  data=json.dumps(user_dict), content_type='application/json')
+
+        resp = self.app.get('user/%s/listens' % user_id)
+        data = json.loads(resp.data)
+        expect(data).contains('recentTracks')
+        expect(data['recentTracks']).contains('tracks')
+
+
 
 class TestGetQueue(TestView):
 
@@ -623,6 +644,18 @@ class TestUpdateUser(TestView):
 
         expect(resp.status_code) == 200
         expect(self.db.session.query(User).one().lastfm_name) == "ssk"
+
+    def it_adds_the_twitter_name_to_the_user(self):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+
+        user_dict['twitterUsername'] = 'satshabad'
+
+        resp = self.app.put('user/%s' % user_id,  data=json.dumps(user_dict), content_type='application/json')
+
+        expect(resp.status_code) == 200
+        expect(self.db.session.query(User).one().twitter_name) == "satshabad"
+
 
     @patch('queue_app.views.send_push_message')
     @patch('queue_app.views.is_friends')

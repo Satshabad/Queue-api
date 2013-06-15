@@ -20,6 +20,7 @@ class User(db.Model):
     id = Column(Integer, primary_key=True)
     fb_id = Column(Integer)
     lastfm_name = Column(String)
+    twitter_name = Column(String)
     fullname = Column(String)
     image_link = Column(String)
     access_token = Column(String)

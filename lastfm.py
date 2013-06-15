@@ -25,11 +25,10 @@ class LastFMer():
 
     @staticmethod
     def format_listen_data(data):
-        new_data = {}
+        new_data = []
 
-        new_data['tracks'] = []
         for track in data['recenttracks']['track']:
-            new_data['tracks'].append(LastFMer.parse_track(track))
+            new_data.append(LastFMer.parse_track(track))
 
         return new_data
 
@@ -47,18 +46,22 @@ class LastFMer():
 
         new_track['song'] = {}
         new_track['song']['name'] = track['name']
-        if track.get('image', None):
+        if track.has_key('image'):
             new_track['song']['images'] = LastFMer.parse_images(track)
-        else:
+        elif track.has_key('album'):
             new_track['song']['images'] = LastFMer.parse_images(track['album'])
-
-
-        new_track['song']['album'] = track['album']
-
-        if track['album'].get('#text', None):
-            new_track['song']['album'][u'name'] = track['album']['#text']
+        elif track.has_key('artist'):
+            new_track['song']['images'] = LastFMer.parse_images(track['artist'])
         else:
-            new_track['song']['album'][u'name'] = track['album']['title']
+            new_track['song']['images'] = {}
+
+
+        new_track['song']['album'] = track.get('album', {})
+        if track.has_key('album'):
+            if track['album'].has_key('#text'):
+                new_track['song']['album'][u'name'] = track['album']['#text']
+            elif track['album'].has_key('title'):
+                new_track['song']['album'][u'name'] = track['album']['title']
 
         new_track['song']['artist'] = {}
         new_track['song']['artist'] = track['artist']

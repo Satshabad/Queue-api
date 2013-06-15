@@ -30,6 +30,24 @@ class LastfmerSpec(unittest.TestCase):
         expect(track['song']).contains('album')
         expect(track['song']['album']).contains('name')
 
+    def it_completes_the_song_as_best_it_can(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_completion_no_album.yaml'):
+            track = LastFMer.complete_song("Gimme Some Lovin' ", " Spirit")
+
+        expect(track).contains('type')
+        expect(track).contains('dateListened')
+
+        expect(track).contains('song')
+        expect(track['song']).contains('images')
+
+        expect(track['song']).contains('artist')
+        expect(track['song']['artist']).contains('images')
+        expect(track['song']['artist']).contains('name')
+
+        expect(track['song']).contains('album')
+
+
 
     def it_gets_the_users_listens(self):
 

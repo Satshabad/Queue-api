@@ -3,6 +3,7 @@ import json
 import calendar
 import os
 from functools import wraps
+from pprint import pprint
 
 from flask import Flask, request, jsonify, session
 from flask import redirect, request, current_app
@@ -16,7 +17,9 @@ from app import app, db, login_manager
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
 from lastfm import LastFMer
 from links import Linker
+from twit import Twitterer
 import marshall
+
 
 TS_API_KEY = app.config['TS_API_KEY']
 TS_API_URL = app.config['TS_API_URL']
@@ -65,17 +68,14 @@ def get_listens(user_id):
         return '', 404
     
     listens = []
-    lastfm_name = user.lastfm_name
-
-    if not lastfm_name:
-        return '', 404
+    print user.twitter_name
+    if user.lastfm_name :
+        listens.extend(LastFMer.get_user_listens(user.lastfm_name))
+    if user.twitter_name:
+        listens.extend(Twitterer.get_user_listens(user.twitter_name))
     
-
-    lastfm_tracks = LastFMer.get_user_listens(lastfm_name)
-
-    data = {'recentTracks':{ 'tracks':lastfm_tracks['tracks']}}
-
-    data['recentTracks']['tracks'] = sorted(data['recentTracks']['tracks'], lambda k1, k2: k1['dateListened'] > k2['dateListened'])
+    pprint(listens)
+    data = {'recentTracks':{ 'tracks':sorted(listens, lambda k1, k2: k1['dateListened'] > k2['dateListened'])}}
 
     return jsonify(data)
 
@@ -90,6 +90,7 @@ def home():
 def change_user(user_id):
     args = request.json
     lastfm_name = args.get('lastFMUsername', None)
+    twitter_name = args.get('twitterUsername', None)
     device_token = args.get('deviceToken', None)
     badge_setting = args.get('badgeSetting', None)
 
@@ -103,6 +104,9 @@ def change_user(user_id):
 
     if lastfm_name != None:
         user.lastfm_name = lastfm_name
+
+    if twitter_name != None:
+        user.twitter_name = twitter_name
 
     if device_token != None:
         user.device_token = device_token
