@@ -1,4 +1,4 @@
-from models import SongItem, Artist, Album, UrlsForItem
+from models import SongItem, Artist, Album, UrlsForItem, NoteItem
 from links import Linker
 from lastfm import LastFMer
 
@@ -35,7 +35,9 @@ def make_song_model(data):
     return orm_song
 
 
-def make_urls_for_song(name, artist):
+def make_urls_for_song(data):
+    name = data['name']
+    artist = data['artist']['name']
     spotify_url = Linker.spotify_song(song=name, artist=artist)
     grooveshark_url = Linker.grooveshark(artist=artist, song=name)
     return UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
@@ -45,4 +47,32 @@ def create_song(data):
         song = make_song_model(data)
     else:
         song = LastFMer.complete_song(data['name'], data['artist']['name'])
-   
+
+    return song
+
+def make_artist_model(data):
+    orm_artist = ArtistItem(name=data['name'],
+                        small_image_link=data['images'].get('small', None),
+                        medium_image_link=data['images'].get('medium', None),
+                        large_image_link=data['images'].get('large', None),
+                        extra_large_image_link=data['images'].get('extraLarge', None))
+    return orm_artist
+
+def make_urls_for_artist(data):
+    spotify_url = Linker.spotify_artist(artist=data['name'])
+    grooveshark_url = Linker.grooveshark(artist=data['name'])
+    return UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
+
+def make_note_model(data):
+    orm_note = NoteItem(text=data['text'],
+                        small_image_link=data['images'].get('small', None),
+                        medium_image_link=data['images'].get('medium', None),
+                        large_image_link=data['images'].get('large', None),
+                        extra_large_image_link=data['images'].get('extraLarge', None))
+
+    return orm_note
+
+def make_urls_for_note(data):
+    return UrlsForItem(other_url=Linker.parse_from_text(data['text']))
+
+

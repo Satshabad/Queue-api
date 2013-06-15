@@ -11,7 +11,18 @@ class Marshall(unittest.TestCase):
     @patch('queue_app.marshall.Linker.grooveshark') 
     @patch('queue_app.marshall.Linker.spotify_song') 
     def it_makes_urls_for_song(self, spotify_song, grooveshark):
-        marshall.make_urls_for_song("name", "artist")
+        data = {"artist": {"name":"Todd Snider", 
+                           "images":{"small":"link", 
+                           "medium":"link", 
+                           "large":"link", 
+                           "extraLarge":"link"}}, 
+                "album":{"name":"Something"}, 
+                "name":"Too Soon To Tell",
+                "images":{"small":"link", 
+                           "medium":"link", 
+                           "large":"link", 
+                           "extraLarge":"link"}}
+        urls = marshall.make_urls_for_song(data)
 
     def it_knows_when_song_dont_have_artist_images(self):
         data = {"artist": {"name":"Todd Snider", "images":{}},
@@ -38,9 +49,6 @@ class Marshall(unittest.TestCase):
                            "extraLarge":"link"}}
 
         expect(marshall.song_is_complete_enough(data)) == False
-
-
-
 
     def it_makes_a_song_model(self):
         data = {"artist": {"name":"Todd Snider", 

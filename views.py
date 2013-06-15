@@ -16,6 +16,7 @@ from app import app, db, login_manager
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
 from lastfm import LastFMer
 from links import Linker
+import marshall
 
 TS_API_KEY = app.config['TS_API_KEY']
 TS_API_URL = app.config['TS_API_URL']
@@ -309,61 +310,26 @@ def enqueue_item(user_id):
 
 
     if queue_item['type'] == 'song':
-        artist = media['artist']
-        orm_artist = Artist(name=artist['name'],
-                            small_image_link=artist['images']['small'],
-                            medium_image_link=artist['images']['medium'],
-                            large_image_link=artist['images']['large'],
-                            extra_large_image_link=artist['images']['extraLarge'])
+        orm_song = marshall.create_song(media)
+        orm_urls = marshall.make_urls_for_song(media)
 
-        album = media['album']
-        orm_album = Album(name=album['name'])
-
-
-        orm_song = SongItem(name=media['name'],
-                            small_image_link=media['images']['small'],
-                            medium_image_link=media['images']['medium'],
-                            large_image_link=media['images']['large'],
-                            extra_large_image_link=media['images']['extraLarge'])
-
-
-        spotify_url = Linker.spotify_song(song=orm_song.name, artist=orm_artist.name)
-        grooveshark_url = Linker.grooveshark(artist=orm_artist.name, song=orm_song.name)
-        orm_urls = UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
-
-        orm_song.artist = orm_artist
-        orm_song.album = orm_album
         orm_queue_item.urls = orm_urls
         orm_queue_item.song_item = [orm_song]
-        db.session.add_all([orm_queue_item, orm_song, orm_album, orm_artist, orm_urls])
+        db.session.add_all([orm_queue_item, orm_song, orm_urls])
 
     elif queue_item['type'] == 'artist':
-        orm_artist = ArtistItem(name=media['name'],
-                            small_image_link=media['images']['small'],
-                            medium_image_link=media['images']['medium'],
-                            large_image_link=media['images']['large'],
-                            extra_large_image_link=media['images']['extraLarge'])
-
-
-        spotify_url = Linker.spotify_artist(artist=orm_artist.name)
-        grooveshark_url = Linker.grooveshark(artist=orm_artist.name)
-        orm_urls = UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
+        orm_artist = marshall.make_artist_model(media)
+        orm_urls = marshall.make_urls_for_artist(media)
 
         orm_queue_item.urls = orm_urls
         orm_queue_item.artist_item = [orm_artist]
         db.session.add_all([orm_artist, orm_queue_item, orm_urls])
 
     elif queue_item['type'] == 'note':
-        orm_note = NoteItem(text=media['text'],
-                            small_image_link=media['images']['small'],
-                            medium_image_link=media['images']['medium'],
-                            large_image_link=media['images']['large'],
-                            extra_large_image_link=media['images']['extraLarge'])
+        orm_note = marshall.make_note_model(media)
+        orm_urls = marshall.make_urls_for_note(media)
 
-
-        orm_urls = UrlsForItem(other_url=Linker.parse_from_text(media['text']))
         orm_queue_item.urls = orm_urls
-
         orm_queue_item.note_item = [orm_note]
         db.session.add_all([orm_note, orm_queue_item, orm_urls])
 
