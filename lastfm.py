@@ -93,6 +93,9 @@ class LastFMer():
     def format_song_search_data(data):
         tracks = []
 
+        if type(data) == type(u''):
+            return tracks
+ 
         if type(data['results']['trackmatches']) == type(u''):
             return tracks
          

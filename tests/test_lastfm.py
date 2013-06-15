@@ -63,6 +63,31 @@ class LastfmerSpec(unittest.TestCase):
         
     # Search 
 
+    def it_searches_for_artists(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search.yaml'):
+            result = LastFMer.search_for_artists("Love")
+
+        expect(result[0]).contains('artist')
+        expect(result[0]['artist']).contains('name')
+
+        expect(result[0]['artist']).contains('images')
+        expect(result[0]['artist']['images']).contains('small')
+        expect(result[0]['artist']['images']).contains('medium')
+        expect(result[0]['artist']['images']).contains('large')
+        expect(result[0]['artist']['images']).contains('extraLarge')
+
+ 
+        expect(result[0]).contains('listeners')
+
+    def it_searches_for_artists(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_bad.yaml'):
+            result = LastFMer.search_for_artists("askdjaskdjS")
+
+        expect(result) == []
+
+
     def it_searches_for_songs(self):
 
         with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search.yaml'):
@@ -86,7 +111,7 @@ class LastfmerSpec(unittest.TestCase):
 
         expect(result[0]).contains('listeners')
 
-    def it_searches_for_songs(self):
+    def it_searches_for_a_single_songs(self):
 
         with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search_single.yaml'):
             result = LastFMer.search_for_songs("Wake up Motopony")
@@ -108,3 +133,19 @@ class LastfmerSpec(unittest.TestCase):
         expect(result[0]['song']).contains('album')
 
         expect(result[0]).contains('listeners')
+
+    def it_searches_for_songs_but_finds_none_for_single_letter(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search_bad_1.yaml'):
+            result = LastFMer.search_for_songs("S")
+
+        expect(result) == []
+
+    def it_searches_for_songs_but_finds_none_for_nonsense(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search_bad_2.yaml'):
+            result = LastFMer.search_for_songs("Sasdasdasdjlasdj")
+
+        expect(result) == []
+     
+        
