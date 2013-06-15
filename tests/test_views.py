@@ -370,7 +370,6 @@ class TestListens(TestView):
         resp = self.app.get('user/%s/listens' % user_id)
         data = json.loads(resp.data)
         expect(data).contains('recentTracks')
-        expect(data['recentTracks']).contains('tracks')
 
 
 

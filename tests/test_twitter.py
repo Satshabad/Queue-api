@@ -23,9 +23,8 @@ class TwittererSpec(unittest.TestCase):
         
         tracks = Twitterer.get_user_listens('satshabad')
 
-        expect(tracks).contains('tracks')
-        expect(tracks['tracks'][0]).contains('type')
-        expect(tracks['tracks'][0]).contains('dateListened')
+        expect(tracks[0]).contains('type')
+        expect(tracks[0]).contains('dateListened')
         
     def it_parses_the_search_text(self):
         search_texts = Twitterer.parse_search_text_into_name_and_artist('Wake up by Motopony, on #SoundHound http://link.com')

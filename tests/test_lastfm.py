@@ -54,20 +54,19 @@ class LastfmerSpec(unittest.TestCase):
         with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_listens.yaml'):
             listens = LastFMer.get_user_listens('satshabad')
 
-        expect(listens).contains('tracks')
-        expect(listens['tracks'][0]).contains('type')
-        expect(listens['tracks'][0]).contains('dateListened')
+        expect(listens[0]).contains('type')
+        expect(listens[0]).contains('dateListened')
 
-        expect(listens['tracks'][0]).contains('song')
+        expect(listens[0]).contains('song')
 
-        expect(listens['tracks'][0]['song']).contains('images')
+        expect(listens[0]['song']).contains('images')
 
-        expect(listens['tracks'][0]['song']).contains('artist')
-        expect(listens['tracks'][0]['song']['artist']).contains('images')
-        expect(listens['tracks'][0]['song']['artist']).contains('name')
+        expect(listens[0]['song']).contains('artist')
+        expect(listens[0]['song']['artist']).contains('images')
+        expect(listens[0]['song']['artist']).contains('name')
 
-        expect(listens['tracks'][0]['song']).contains('album')
-        expect(listens['tracks'][0]['song']['album']).contains('name')
+        expect(listens[0]['song']).contains('album')
+        expect(listens[0]['song']['album']).contains('name')
 
                         
     def it_parses_and_formats_the_images(self):
