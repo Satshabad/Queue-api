@@ -80,6 +80,25 @@ class LastfmerSpec(unittest.TestCase):
  
         expect(result[0]).contains('listeners')
 
+    def it_searches_for_artists_with_no_listeners(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_no_listens.yaml'):
+            result = LastFMer.search_for_artists("firewater")
+
+        expect(result[0]).contains('artist')
+        expect(result[0]['artist']).contains('name')
+
+        expect(result[0]['artist']).contains('images')
+        expect(result[0]['artist']['images']).contains('small')
+        expect(result[0]['artist']['images']).contains('medium')
+        expect(result[0]['artist']['images']).contains('large')
+        expect(result[0]['artist']['images']).contains('extraLarge')
+
+ 
+        expect(result[0]).contains('listeners')
+
+
+
     def it_searches_for_artists(self):
 
         with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_bad.yaml'):

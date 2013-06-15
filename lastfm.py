@@ -138,7 +138,7 @@ class LastFMer():
         for artist in data['results']['artistmatches']['artist']:
             new_artist = {}
 
-            new_artist['listeners'] = artist['listeners']
+            new_artist['listeners'] = artist.get('listeners', 0)
             new_artist['artist'] = {}
             new_artist['artist']['name'] = artist['name']
             new_artist['artist']['images'] = LastFMer.parse_images(artist)
