@@ -53,8 +53,8 @@ def support_jsonp(f):
 @app.route('/search/<search_text>', methods=['GET'])
 @support_jsonp
 def search(search_text):
-    tracks = LastFMer.search_for_songs(search_text)
-    artists = LastFMer.search_for_artists(search_text)
+    tracks = LastFMer.search_for_songs(search_text)[:5]
+    artists = LastFMer.search_for_artists(search_text)[:5]
     results = {'trackResults':tracks, 'artistResults':artists}
 
     return jsonify(results)
@@ -68,13 +68,11 @@ def get_listens(user_id):
         return '', 404
     
     listens = []
-    print user.twitter_name
     if user.lastfm_name :
         listens.extend(LastFMer.get_user_listens(user.lastfm_name))
     if user.twitter_name:
         listens.extend(Twitterer.get_user_listens(user.twitter_name))
     
-    pprint(listens)
     data = {'recentTracks':{ 'tracks':sorted(listens, lambda k1, k2: k1['dateListened'] > k2['dateListened'])}}
 
     return jsonify(data)
