@@ -1,4 +1,4 @@
-from models import SongItem, Artist, Album, UrlsForItem, NoteItem
+from models import SongItem, Artist, Album, UrlsForItem, NoteItem, ArtistItem
 from links import Linker
 from lastfm import LastFMer
 
@@ -59,6 +59,7 @@ def make_artist_model(data):
     return orm_artist
 
 def make_urls_for_artist(data):
+    print Linker
     spotify_url = Linker.spotify_artist(artist=data['name'])
     grooveshark_url = Linker.grooveshark(artist=data['name'])
     return UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)

@@ -18,6 +18,7 @@ Friend = models.Friend
 QueueItem = models.QueueItem
 SongItem = models.SongItem
 NoteItem = models.NoteItem
+ArtistItem = models.ArtistItem
  
 def make_user_post_dict(fb_id=456, full_name='satshabad', 
                         access_token='abc', 
@@ -40,6 +41,11 @@ def make_note_post_dict(user_id, access_token, listened=False, text='blah'):
 def make_song_post_dict(user_id, access_token, listened=False, song_name="Too Soon To Tell", artist="Todd Snider", album="Agnostic Hymns & Stoner Fables"):
         return {'fromUser':{'userID':user_id,'accessToken':access_token},
                         'type':'song', 'listened':listened, 'song':{'name':song_name,'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}, 'artist':{'name':artist, 'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}}, 'album':{'name':album}}}
+
+
+def make_artist_post_dict(user_id, access_token, listened=False, artist="Todd Snider"):
+        return {'fromUser':{'userID':user_id,'accessToken':access_token},
+                        'type':'artist', 'listened':listened, 'artist':{'name':artist,'images':{'small':"", 'medium':'', 'large':'', 'extraLarge':''}, }}
 
 
 
@@ -185,8 +191,34 @@ class TestEnqueue(TestView):
     
     @patch('queue_app.views.Linker.grooveshark')
     @patch('queue_app.views.is_friends')
-    @patch('queue_app.views.Linker.spotify_song')
+    @patch('queue_app.views.Linker.spotify_artist')
     def it_adds_a_song_to_my_queue(self, spotify_song, is_friends, grooveshark):
+        spotify_song.return_value = "Some spotify link"
+        grooveshark.return_value = "Some grooveshark link"
+        is_friends.return_value = True
+
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
+        song_dict = make_artist_post_dict(user_id, user_dict['accessToken'])
+
+        self.app.post('user/%s/queue' % user_id, data=json.dumps(song_dict), content_type='application/json')
+
+        queue_item = self.db.session.query(QueueItem).one()
+
+        expect(queue_item.queued_by_user.id) == user_id 
+        expect(queue_item.user.id) == user_id 
+        expect(queue_item.listened) == False
+        expect(queue_item.urls.grooveshark_url) ==  "Some grooveshark link"
+        expect(queue_item.urls.spotify_url) == "Some spotify link"
+
+        artist_item = self.db.session.query(ArtistItem).one()
+        expect(queue_item.id) == artist_item.id
+        expect(artist_item.name) == song_dict['artist']['name']
+
+    @patch('queue_app.views.Linker.grooveshark')
+    @patch('queue_app.views.is_friends')
+    @patch('queue_app.views.Linker.spotify_song')
+    def it_adds_and_artist_to_my_queue(self, spotify_song, is_friends, grooveshark):
         spotify_song.return_value = "Some spotify link"
         grooveshark.return_value = "Some grooveshark link"
         is_friends.return_value = True
