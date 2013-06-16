@@ -1,6 +1,7 @@
 import unittest
 from pprint import pprint
 
+import vcr
 from mock import patch
 from expecter import expect
 
@@ -69,5 +70,19 @@ class Marshall(unittest.TestCase):
         expect(song.small_image_link) == "link"
         expect(song.artist.name) == "Todd Snider"
     
+    def it_creates_song_when_not_enough_info(self):
+        data = {"artist": {"name":"Todd Snider",
+                            "images":{}},
+                "name":"Too Soon To Tell",
+                "images":{"small":"link", 
+                           "medium":"link", 
+                           "large":"link", 
+                           "extraLarge":"link"}}
 
+        with vcr.use_cassette('./fixtures/vcr_cassettes/create_incomplete_song.yaml'):
+            song = marshall.create_song(data)
+
+        expect(song.name) == "Too Soon to Tell"
+        expect(song.artist.name) == "Todd Snider"
+ 
 

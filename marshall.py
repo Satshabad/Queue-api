@@ -46,7 +46,7 @@ def create_song(data):
     if song_is_complete_enough(data):
         song = make_song_model(data)
     else:
-        song = LastFMer.complete_song(data['name'], data['artist']['name'])
+        song = make_song_model(LastFMer.complete_song(data['name'], data['artist']['name'])['song'])
 
     return song
 
