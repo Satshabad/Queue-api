@@ -20,7 +20,7 @@ def make_song_model(data):
                         extra_large_image_link=artist['images'].get('extraLarge', None))
 
     album = data['album']
-    orm_album = Album(name=album['name'])
+    orm_album = Album(name=album.get('name', None))
 
 
     orm_song = SongItem(name=data['name'],
