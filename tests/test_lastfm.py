@@ -114,9 +114,26 @@ class LastfmerSpec(unittest.TestCase):
  
         expect(result[0]).contains('listeners')
 
+    def it_searches_for_artists_with_singular_result(self):
+
+        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_single_result.yaml'):
+            result = LastFMer.search_for_artists("daft punk medley")
+
+        expect(result[0]).contains('artist')
+        expect(result[0]['artist']).contains('name')
+
+        expect(result[0]['artist']).contains('images')
+        expect(result[0]['artist']['images']).contains('small')
+        expect(result[0]['artist']['images']).contains('medium')
+        expect(result[0]['artist']['images']).contains('large')
+        expect(result[0]['artist']['images']).contains('extraLarge')
+
+ 
+        expect(result[0]).contains('listeners')
 
 
-    def it_searches_for_artists(self):
+
+    def it_searches_for__nonexistent_artists(self):
 
         with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_bad.yaml'):
             result = LastFMer.search_for_artists("askdjaskdjS")

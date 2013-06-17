@@ -138,6 +138,18 @@ class LastFMer():
         if type(data['results']['artistmatches']) == type(u''):
             return artists
 
+        if type(data['results']['artistmatches']['artist']) == type({}):
+            artist = data['results']['artistmatches']['artist']
+            new_artist = {}
+
+            new_artist['listeners'] = artist.get('listeners', 0)
+            new_artist['artist'] = {}
+            new_artist['artist']['name'] = artist['name']
+            new_artist['artist']['images'] = LastFMer.parse_images(artist)
+
+            return [new_artist]
+
+
         for artist in data['results']['artistmatches']['artist']:
             new_artist = {}
 
