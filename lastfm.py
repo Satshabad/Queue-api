@@ -36,16 +36,13 @@ class LastFMer():
     def parse_track(track):
         new_track = {}
 
-        if track.has_key("date"):
-            new_track['dateListened'] = track["date"]['uts']
-        else:
-            new_track['dateListened'] = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
+        new_track['dateListened'] = calendar.timegm(datetime.datetime.utcnow().utctimetuple())
 
         new_track['type'] = 'lastFM'
 
 
         new_track['song'] = {}
-        new_track['song']['name'] = track['name']
+        new_track['song']['name'] = track.get('name', None)
         if track.has_key('image'):
             new_track['song']['images'] = LastFMer.parse_images(track)
         elif track.has_key('album'):
@@ -62,9 +59,10 @@ class LastFMer():
                 new_track['song']['album'][u'name'] = track['album']['#text']
             elif track['album'].has_key('title'):
                 new_track['song']['album'][u'name'] = track['album']['title']
+            else:
+                new_track['song']['album'][u'name'] = None
 
-        new_track['song']['artist'] = {}
-        new_track['song']['artist'] = track['artist']
+        new_track['song']['artist'] = track.get('artist', {})
         new_track['song']['artist']['images'] = LastFMer.parse_images(track['artist'])
 
         return new_track
@@ -96,10 +94,11 @@ class LastFMer():
     def format_song_search_data(data):
         tracks = []
 
-        if type(data) == type(u''):
-            return tracks
- 
-        if type(data['results']['trackmatches']) == type(u''):
+        if (type(data) == type(u'') or 
+            not data.has_key('results') or 
+            not data['results'].has_key('trackmatches') or
+            type(data['results']['trackmatches']) == type(u'') or
+            not data['results']['trackmatches'].has_key('track')):
             return tracks
          
 
@@ -114,9 +113,9 @@ class LastFMer():
             new_track['song'] = {}
             new_track['song']['images'] = LastFMer.parse_images(track)
             new_track['song']['album'] = {}
-            new_track['song']['name'] = track['name']
-            new_track['song']['artist'] = {'name':track['artist'], 'images':{}}
-            new_track['listeners'] = track['listeners']
+            new_track['song']['name'] = track.get('name', None)
+            new_track['song']['artist'] = {'name':track.get('artist', None), 'images':{}}
+            new_track['listeners'] = track.get('listeners', None)
 
             tracks.append(new_track)
 
@@ -135,8 +134,13 @@ class LastFMer():
     def format_artist_search_data(data):
         artists = []
 
-        if type(data['results']['artistmatches']) == type(u''):
+        if (type(data) == type(u'') or
+            not data.has_key('results') or
+            not data['results'].has_key('artistmatches') or
+            type(data['results']['artistmatches']) == type(u'') or
+            not data['results']['artistmatches'].has_key('artist')):
             return artists
+
 
         if type(data['results']['artistmatches']['artist']) == type({}):
             artist = data['results']['artistmatches']['artist']
@@ -144,7 +148,7 @@ class LastFMer():
 
             new_artist['listeners'] = artist.get('listeners', 0)
             new_artist['artist'] = {}
-            new_artist['artist']['name'] = artist['name']
+            new_artist['artist']['name'] = artist.get('name', None)
             new_artist['artist']['images'] = LastFMer.parse_images(artist)
 
             return [new_artist]
@@ -155,7 +159,7 @@ class LastFMer():
 
             new_artist['listeners'] = artist.get('listeners', 0)
             new_artist['artist'] = {}
-            new_artist['artist']['name'] = artist['name']
+            new_artist['artist']['name'] = artist.get('name')
             new_artist['artist']['images'] = LastFMer.parse_images(artist)
 
             artists.append(new_artist)
