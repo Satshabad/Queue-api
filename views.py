@@ -166,7 +166,7 @@ def get_queue(user_id):
     for item in items:
         queue.append(item.dictify())
 
-    return jsonify({"queue":{"items":reversed(queue)}})
+    return jsonify({"queue":{"items":list(reversed(queue))}})
 
 @app.route('/user/<user_id>/queue/<item_id>', methods=['DELETE'])
 @support_jsonp

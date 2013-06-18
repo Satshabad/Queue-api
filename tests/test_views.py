@@ -403,7 +403,22 @@ class TestListens(TestView):
         data = json.loads(resp.data)
         expect(data).contains('recentTracks')
 
+class TestGetQueue(TestView):
+    
+    def it_gets_the_queue(self):
+        user_dict = make_user_post_dict()
+        user_id = self.login_and_get_user_id(user_dict)
 
+        note_dict = make_note_post_dict(user_id, user_dict['accessToken'])
+
+        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict), content_type='application/json')
+
+        resp = self.app.get('/user/%s/queue' % user_id)
+        data = json.loads(resp.data)
+
+        expect(data).contains('queue')
+        expect(data['queue']).contains('items')
+        expect(len(data['queue']['items'])) == 1
 
    
 class TestDeleteQueueItem(TestView):
