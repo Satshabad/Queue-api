@@ -405,40 +405,6 @@ class TestListens(TestView):
 
 
 
-class TestGetQueue(TestView):
-
-    def it_returns_the_queue_in_the_right_order(self):
-        user_dict = make_user_post_dict()
-        user_id = self.login_and_get_user_id(user_dict)
-
-        note_dict_1 = make_note_post_dict(user_id, user_dict['accessToken'], text="item 1")
-        note_dict_2 = make_note_post_dict(user_id, user_dict['accessToken'], text="item 2")
-        note_dict_3 = make_note_post_dict(user_id, user_dict['accessToken'], text="item 3")
-
-        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict_1), content_type='application/json')
-        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict_2), content_type='application/json')
-        self.app.post('user/%s/queue' % user_id,  data=json.dumps(note_dict_3), content_type='application/json')
-
-        note_item_3 = self.db.session.query(NoteItem).filter(NoteItem.text == "item 3").one()
-        note_item_3.queue_item.date_queued = 1000
-        self.db.session.add(note_item_3)
-        self.db.session.commit()
-
-        note_item_2 = self.db.session.query(NoteItem).filter(NoteItem.text == "item 2").one()
-        note_item_2.queue_item.listened = True 
-        self.db.session.add(note_item_2)
-        self.db.session.commit()
-
-        resp = self.app.get('user/%s/queue' % user_id)
-
-        data = json.loads(resp.data)
-        expect(data).contains("queue")
-        expect(data["queue"]).contains("items")
-
-        expect(data["queue"]['items'][0]['note']['text']) == "item 1"
-        expect(data["queue"]['items'][1]['note']['text']) == "item 3"
-        expect(data["queue"]['items'][2]['note']['text']) == "item 2"
-
    
 class TestDeleteQueueItem(TestView):
 

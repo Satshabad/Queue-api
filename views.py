@@ -166,7 +166,6 @@ def get_queue(user_id):
     for item in items:
         queue.append(item.dictify())
 
-    queue = sorted(queue, key=lambda x: (1*x['listened'], -1*x['dateQueued']))
     return jsonify({"queue":{"items":queue}})
 
 @app.route('/user/<user_id>/queue/<item_id>', methods=['DELETE'])
