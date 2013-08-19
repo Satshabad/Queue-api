@@ -5,15 +5,15 @@ import vcr
 from expecter import expect
 from mock import patch, MagicMock
 
-from queue_app import twit
+from api import twit
 
 Twitterer = twit.Twitterer
 
 class TwittererSpec(unittest.TestCase):
 
 
-    @patch('queue_app.twit.LastFMer')
-    @patch('queue_app.twit.twitter')
+    @patch('api.twit.LastFMer')
+    @patch('api.twit.twitter')
     def it_uses_lastfm_to_find_song(self, twitter, LastFMer):
         LastFMer.complete_song.return_value = {}
         tweet = MagicMock()

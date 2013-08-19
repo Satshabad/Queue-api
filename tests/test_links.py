@@ -5,7 +5,7 @@ import vcr
 from mock import patch
 from expecter import expect
 
-from queue_app import links
+from api import links
 
 Linker = links.Linker
 

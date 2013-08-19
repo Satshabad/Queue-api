@@ -5,12 +5,12 @@ import vcr
 from mock import patch
 from expecter import expect
 
-from queue_app import marshall
+from api import marshall
 
 class Marshall(unittest.TestCase):
 
-    @patch('queue_app.marshall.Linker.grooveshark') 
-    @patch('queue_app.marshall.Linker.spotify_song') 
+    @patch('api.marshall.Linker.grooveshark') 
+    @patch('api.marshall.Linker.spotify_song') 
     def it_makes_urls_for_song(self, spotify_song, grooveshark):
         data = {"artist": {"name":"Todd Snider", 
                            "images":{"small":"link", 

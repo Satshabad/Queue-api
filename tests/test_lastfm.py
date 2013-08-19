@@ -5,7 +5,7 @@ from expecter import expect
 from mock import patch
 import vcr
 
-from queue_app import lastfm
+from api import lastfm
 
 LastFMer = lastfm.LastFMer
 
