@@ -16,7 +16,9 @@ def prod():
 
 @task
 def dev():
+    install_make()
     ensure_dir_exists(API_HOME)
+    ensure_dir_exists("{}logs".format(API_HOME))
     install_queue_api()
     install_web_server()
     ensure_db_exists()
@@ -83,5 +85,9 @@ def install_requirements():
 def install_pip():
     run("sudo apt-get -y install python-pip")
 
+def install_make():
+    run("sudo apt-get -y install make")
+
 def install_python_dev():
+    run("sudo apt-get -y update")
     run("sudo apt-get -y install python-dev")

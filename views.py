@@ -4,6 +4,7 @@ import calendar
 import os
 from functools import wraps
 from pprint import pprint
+from logging import getLogger
 
 from flask import Flask, request, jsonify, session
 from flask import redirect, request, current_app
@@ -20,6 +21,7 @@ from links import Linker
 from twit import Twitterer
 import marshall
 
+log = getLogger()
 
 TS_API_KEY = app.config['TS_API_KEY']
 TS_API_URL = app.config['TS_API_URL']
@@ -122,8 +124,7 @@ def change_user(user_id):
 @support_jsonp
 def login():
     args = request.json
-
-
+    log.debug(args)
     access_token = args['accessToken']
     fb_id = args['fbId']
     
@@ -166,7 +167,7 @@ def get_queue(user_id):
     for item in items:
         queue.append(item.dictify())
 
-    return jsonify({"queue":{"items":list(reversed(queue))}})
+    return jsonify({'results': list(reversed(queue))})
 
 @app.route('/user/<user_id>/queue/<item_id>', methods=['DELETE'])
 @support_jsonp
