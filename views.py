@@ -16,9 +16,9 @@ import requests
 from app import app, db, login_manager
 
 from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
-from lastfm import LastFMer
+import lastfm
 from links import Linker
-from twit import Twitterer
+import twit
 import marshall
 
 log = getLogger()
@@ -55,8 +55,8 @@ def support_jsonp(f):
 @app.route('/search/<search_text>', methods=['GET'])
 @support_jsonp
 def search(search_text):
-    tracks = LastFMer.search_for_songs(search_text)[:5]
-    artists = LastFMer.search_for_artists(search_text)[:5]
+    tracks = lastfm.search_for_songs(search_text)[:5]
+    artists = lastfm.search_for_artists(search_text)[:5]
     results = {'trackResults':tracks, 'artistResults':artists}
 
     return jsonify(results)
@@ -71,9 +71,9 @@ def get_listens(user_id):
     
     listens = []
     if user.lastfm_name :
-        listens.extend(LastFMer.get_user_listens(user.lastfm_name))
+        listens.extend(lastfm.get_user_listens(user.lastfm_name))
     if user.twitter_name:
-        listens.extend(Twitterer.get_user_listens(user.twitter_name))
+        listens.extend(twit.get_user_listens(user.twitter_name))
     
     data = {'recentTracks':{ 'tracks':sorted(listens, lambda k1, k2: k1['dateListened'] > k2['dateListened'])}}
 
@@ -167,7 +167,25 @@ def get_queue(user_id):
     for item in items:
         queue.append(item.dictify())
 
-    return jsonify({'results': list(reversed(queue))})
+    return jsonify({'queue': {'items': list(reversed(queue))}} )
+
+
+@app.route('/user/<user_id>/sent', methods=['GET'])
+@support_jsonp
+def get_sent(user_id):
+    user = get_user(user_id)
+
+    if not user:
+        return no_such_user(user_id)
+
+    items = db.session.query(QueueItem)\
+        .filter(QueueItem.queued_by_id == user.id).all()
+
+    queue = []
+    for item in items:
+        queue.append(item.dictify())
+
+    return jsonify({'queue': {'items': list(reversed(queue))}} )
 
 @app.route('/user/<user_id>/queue/<item_id>', methods=['DELETE'])
 @support_jsonp
@@ -215,7 +233,7 @@ def delete_queue_item(user_id, item_id):
 @support_jsonp
 @login_required
 def change_queue_item(user_id, item_id):
-    listened = True if request.json['listened'] == 1 else False
+    listened = True if request.json['saved'] == 1 else False
     user = get_user(user_id)
 
     if user != current_user:
@@ -224,7 +242,7 @@ def change_queue_item(user_id, item_id):
     item = db.session.query(QueueItem)\
         .filter(QueueItem.user_id == user.id)\
         .filter(QueueItem.id == item_id).one()
-    
+
     was_listened = item.listened
     was_shared = item.queued_by_id != item.user_id
     item.listened = listened
@@ -390,7 +408,11 @@ def no_such_user(user_id):
 def is_friends(user_id_1, user_id_2, access_token):
     if user_id_1 == user_id_2:
         return True
-    resp = requests.get("%s/%s/friends/%s?access_token=%s" % (FB_API_URL, user_id_1, user_id_2, access_token))
+
+    resp = requests.get(
+        "%s/%s/friends/%s?access_token=%s" %
+        (FB_API_URL, user_id_1, user_id_2, access_token))
+
     if resp.status_code != 200 or resp.json()['data'] == []:
         return False
 

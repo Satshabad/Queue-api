@@ -47,7 +47,10 @@ class User(db.Model):
                 'badgeSetting':self.badge_setting,
                 "badge":self.badge_num,
                 'image':self.image_link,
-                'lastFMUsername':self.lastfm_name}
+                'lastFMUsername':self.lastfm_name,
+                'accessToken':self.access_token,
+                'deviceToken':self.device_token,
+                'imageLink':self.image_link}
 
     def __repr__(self):
         return "<User('%s','%s', '%s')>" % (self.id, self.fullname, self.image_link)
@@ -126,7 +129,7 @@ class QueueItem(db.Model):
     def dictify(self):
         item_type, item = self.get_item()
         return {'itemId':self.id,
-                'listened': 1 if self.listened else 0,
+                'saved': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
                 'urls':self.urls.dictify(),
                 'type': item_type,

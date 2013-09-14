@@ -48,7 +48,7 @@ def ensure_dir_exists(path):
         run('sudo mkdir -p {}'.format(path))
 
 def ensure_db_exists():
-
+    run("sudo apt-get -y install sqlite3")
     with cd(API_HOME):
         if not exists("queue.db"):
             run("sudo python init_db.py")

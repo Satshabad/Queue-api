@@ -19,6 +19,6 @@ pyOpenSSL==0.13
 raven==3.2.1
 requests==1.1.0
 specloud==0.4.5
-vcrpy==0.0.2
+vcrpy==0.2.1
 wsgiref==0.1.2
 python-twitter==1.0
