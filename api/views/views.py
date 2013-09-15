@@ -141,13 +141,7 @@ def delete_queue_item(user_id, item_id):
         if not was_listened:
             user.badge_num -= 1
 
-            push.notify(user.device_token, badge_num=user.badge_num)
-
-    if user.badge_setting == "shared":
-        if not was_listened and was_shared:
-            user.badge_num -= 1
-
-            push.notify(user.device_token, badge_num=user.badge_num)
+            push.change_badge_number(user)
 
     db.session.add(user)
     db.session.commit()
@@ -178,21 +172,11 @@ def change_queue_item(user_id, item_id):
     if user.badge_setting == "unlistened":
         if listened and not was_listened:
             user.badge_num -= 1
-            push.notify(user.device_token, badge_num=user.badge_num)
 
         if not listened and was_listened:
             user.badge_num += 1
-            push.notify(user.device_token, badge_num=user.badge_num)
 
-    if user.badge_setting == "shared":
-        if was_shared:
-            if listened and not was_listened:
-                user.badge_num -= 1
-                push.notify(user.device_token, badge_num=user.badge_num)
-
-            if not listened and was_listened:
-                user.badge_num += 1
-                push.notify(user.device_token, badge_num=user.badge_num)
+        push.change_badge_number(user)
 
     db.session.add(user)
 
@@ -258,23 +242,18 @@ def enqueue_item(user_id):
 
     db.session.add(orm_queue_item)
 
-    if from_user.id != to_user.id and to_user.device_token:
-        if to_user.badge_setting == "shared":
-            to_user.badge_num += 1
-            push.notify(to_user.device_token,
-                        message="%s shared a %s with you" % (
-                            from_user.fullname, post_data['type']),
-                        badge_num=to_user.badge_num,
-                        name=from_user.fullname, item_type=post_data['type'])
-        else:
-            push.notify(to_user.device_token,
-                        message="%s shared a %s with you" % (
-                            from_user.fullname, post_data['type']),
-                        name=from_user.fullname, item_type=post_data['type'])
 
-    if from_user.id == to_user.id and to_user.badge_setting == "unlistened":
-        to_user.badge_num += 1
-        push.notify(to_user.device_token, badge_num=to_user.badge_num)
+    if from_user.id != to_user.id:
+
+        if to_user.badge_setting == "unlistened":
+            to_user.badge_num += 1
+            push.alert_and_change_badge_number(from_user, to_user, post_data['type'])
+
+    else:
+        if to_user.badge_setting == "unlistened":
+            to_user.badge_num += 1
+
+            push.change_badge_number(to_user)
 
     db.session.add(to_user)
     db.session.commit()
@@ -336,10 +315,6 @@ def recalc_badge_num(user_id):
 
     if user.badge_setting == "unlistened":
         user.badge_num = sum(map(lambda x: 0 if x.listened else 1, user_items))
-
-    if user.badge_setting == "shared":
-        user.badge_num = sum(
-            map(lambda x: 1 if not x.listened and x.queued_by_id != user.id else 0, user_items))
 
     if user.badge_setting is None:
         user.badge_num = 0
