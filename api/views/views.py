@@ -35,9 +35,9 @@ def home():
 
 @app.route('/login', methods=['POST'])
 def login():
-    args = request.json
-    access_token = args['accessToken']
-    fb_id = args['fbId']
+    params = request.json
+    access_token = params['accessToken']
+    fb_id = params['fbId']
 
     if not facebook.verify(fb_id, access_token):
         raise APIException("access token invalid", 400)
@@ -46,10 +46,10 @@ def login():
 
     if not user:
         user = User(fb_id=fb_id, access_token=access_token,
-                    fullname=args['fullName'],
-                    image_link=args['imageLink'],
-                    badge_setting=args.get('badgeSetting'),
-                    device_token=args.get('deviceToken'),
+                    fullname=params['fullName'],
+                    image_link=params['imageLink'],
+                    badge_setting=params.get('badgeSetting'),
+                    device_token=params.get('deviceToken'),
                     badge_num=0)
 
         db.session.add(user)
@@ -73,11 +73,11 @@ def logout():
 @app.route('/user/<user_id>', methods=['PUT'])
 @login_required
 def change_user(user_id):
-    args = request.json
-    lastfm_name = args.get('lastFMUsername', None)
-    twitter_name = args.get('twitterUsername', None)
-    device_token = args.get('deviceToken', None)
-    badge_setting = args.get('badgeSetting', None)
+    params = request.json
+    lastfm_name = params.get('lastFMUsername', None)
+    twitter_name = params.get('twitterUsername', None)
+    device_token = params.get('deviceToken', None)
+    badge_setting = params.get('badgeSetting', None)
 
     user = get_user_or_404(user_id)
 
@@ -103,11 +103,12 @@ def change_user(user_id):
 
 @app.route('/user/<user_id>/queue', methods=['GET'])
 def get_queue(user_id):
+    page = int(request.args.get('page') or 1)
 
     user = get_user_or_404(user_id)
 
-    items = db.session.query(QueueItem)\
-        .filter(QueueItem.user_id == user.id).all()
+    items = QueueItem.query.filter(
+        QueueItem.user_id == user.id).paginate(page, error_out=False).items
 
     queue = []
     for item in items:
@@ -123,7 +124,7 @@ def delete_queue_item(user_id, item_id):
 
     assert_is_current_user(user)
 
-    queue_item = db.session.query(QueueItem).get(item_id)
+    queue_item = QueueItem.query.get(item_id)
 
     if queue_item is None:
         raise APIException("queue item not found", 404)
@@ -157,7 +158,7 @@ def change_queue_item(user_id, item_id):
 
     assert_is_current_user(user)
 
-    item = db.session.query(QueueItem).get(item_id)
+    item = QueueItem.query.get(item_id)
 
     if item is None:
         raise APIException("item not found", 404)
@@ -188,8 +189,8 @@ def change_queue_item(user_id, item_id):
 @app.route('/fbuser/<fb_id>/queue', methods=['POST'])
 @login_required
 def enqueue_item_by_fbid(fb_id):
-    queue_item = request.json
-    from_user_id = queue_item['fromUser']['userID']
+    params = request.json
+    from_user_id = params['fromUser']['userID']
 
     from_user = get_user_or_404(from_user_id)
     to_user = get_user_or_404(fb_id, by_fb_id=True)
@@ -203,10 +204,10 @@ def enqueue_item_by_fbid(fb_id):
 @login_required
 def enqueue_item(user_id):
 
-    post_data = request.json
-    from_user_id = post_data['fromUser']['userID']
-    access_token = post_data['fromUser']['accessToken']
-    item_data = post_data[post_data['type']]
+    params = request.json
+    from_user_id = params['fromUser']['userID']
+    access_token = params['fromUser']['accessToken']
+    item_data = params[params['type']]
 
     from_user = get_user_or_404(from_user_id)
     to_user = get_user_or_404(user_id)
@@ -219,21 +220,21 @@ def enqueue_item(user_id):
                                urls=None,
                                listened=False,
                                date_queued=calendar.timegm(datetime.datetime.utcnow().utctimetuple()))
-    if 'song' in post_data:
+    if 'song' in params:
         orm_song = marshall.create_song(item_data)
         orm_urls = marshall.make_urls_for_song(item_data)
 
         orm_queue_item.urls = orm_urls
         orm_queue_item.song_item = [orm_song]
 
-    elif 'artist' in post_data:
+    elif 'artist' in params:
         orm_artist = marshall.make_artist_model(item_data)
         orm_urls = marshall.make_urls_for_artist(item_data)
 
         orm_queue_item.urls = orm_urls
         orm_queue_item.artist_item = [orm_artist]
 
-    elif 'note' in post_data:
+    elif 'note' in params:
         orm_note = marshall.make_note_model(item_data)
         orm_urls = marshall.make_urls_for_note(item_data)
 
@@ -242,12 +243,12 @@ def enqueue_item(user_id):
 
     db.session.add(orm_queue_item)
 
-
     if from_user.id != to_user.id:
 
         if to_user.badge_setting == "unlistened":
             to_user.badge_num += 1
-            push.alert_and_change_badge_number(from_user, to_user, post_data['type'])
+            push.alert_and_change_badge_number(
+                from_user, to_user, params['type'])
 
     else:
         if to_user.badge_setting == "unlistened":
@@ -263,10 +264,11 @@ def enqueue_item(user_id):
 
 @app.route('/user/<user_id>/sent', methods=['GET'])
 def get_sent(user_id):
+    page = int(request.args.get('page') or 1)
     user = get_user_or_404(user_id)
 
-    items = db.session.query(QueueItem)\
-        .filter(QueueItem.queued_by_id == user.id).all()
+    items = QueueItem.query.filter(
+        QueueItem.queued_by_id == user.id).paginate(page, error_out=False).items
 
     queue = []
     for item in items:
@@ -307,10 +309,8 @@ def search(search_text):
 
 
 def recalc_badge_num(user_id):
-
-    user = db.session.query(User).get(user_id)
-    user_items = db.session.query(
-        QueueItem).filter(
+    user = User.query.get(user_id)
+    user_items = QueueItem.query.filter(
         QueueItem.user_id == user.id)
 
     if user.badge_setting == "unlistened":
