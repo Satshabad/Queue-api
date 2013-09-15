@@ -15,6 +15,7 @@ from mock import patch, MagicMock
 from api import app, db
 from api.scripts import feedback
 
+import api
 from api import fixtures
 from api.fixtures import (vcr,
                           make_user,
@@ -49,9 +50,9 @@ class TestView(TestCase):
         db.session.remove()
         db.drop_all()
 
-    @patch('api.views.views.fb_user_is_valid')
-    def login(self, user, fb_user_is_valid):
-        fb_user_is_valid.return_value = True
+    @patch('api.lib.facebook.verify')
+    def login(self, user, verify):
+        verify.return_value = True
 
         resp = self.client.post(
             '/login',
@@ -127,10 +128,8 @@ class TestEnqueue(TestView):
 
         expect(resp.status_code) == 401
 
-    @patch('api.views.views.is_friends')
-    def it_returns_403_when_user_is_unauthorized(self, is_friends):
-
-        is_friends.return_value = True
+    @patch('api.views.views.assert_are_friends')
+    def it_returns_403_when_user_is_unauthorized(self, assert_are_friends):
 
         user1, uid1 = self.login(satshabad)
         resp = self.logout()
@@ -145,17 +144,15 @@ class TestEnqueue(TestView):
 
         expect(resp.status_code) == 403
 
-    @patch('api.views.views.is_friends')
-    def it_returns_403_when_two_users_are_not_friends(self, is_friends):
-
-        is_friends.return_value = False
-
+    @patch('api.views.views.assert_are_friends')
+    def it_returns_403_when_two_users_are_not_friends(self, assert_are_friends):
+        assert_are_friends.side_effect = api.views.views.APIException("blah", 403)
         user1, uid1 = self.login(satshabad)
         resp = self.logout()
 
         user2, uid2 = self.login(fateh)
 
-        song = make_song_from(user1)
+        song = make_song_from(user2)
 
         resp = self.client.post(
             'user/%s/queue' % uid1, data=json.dumps(song),
@@ -163,10 +160,9 @@ class TestEnqueue(TestView):
 
         expect(resp.status_code) == 403
 
-    @patch('api.views.views.is_friends')
-    def it_adds_a_song_to_my_queue(self, is_friends):
+    @patch('api.views.views.assert_are_friends')
+    def it_adds_a_song_to_my_queue(self, assert_are_friends):
 
-        is_friends.return_value = True
 
         user, uid = self.login(satshabad)
         song = make_song_from(user)
@@ -194,10 +190,9 @@ class TestEnqueue(TestView):
         expect(song_item.artist.name) == song['song']['artist']['name']
         expect(song_item.album.name) == song['song']['album']['name']
 
-    @patch('api.views.views.is_friends')
-    def it_adds_a_note_to_my_queue(self, is_friends):
+    @patch('api.views.views.assert_are_friends')
+    def it_adds_a_note_to_my_queue(self, assert_are_friends):
 
-        is_friends.return_value = True
 
         user, uid = self.login(satshabad)
         note = make_note_from(user)
@@ -222,12 +217,11 @@ class TestEnqueue(TestView):
         expect(queue_item.id) == note_item.id
         expect(note_item.text) == note['note']['text']
 
-    @patch('api.views.views.send_push_message')
-    @patch('api.views.views.is_friends')
+    @patch('api.lib.push.notify')
+    @patch('api.views.views.assert_are_friends')
     def it_adds_a_song_to_my_friends_queue(
-        self, is_friends, send_push_message):
+        self, assert_are_friends, notify):
 
-        is_friends.return_value = True
 
         user1, uid1 = self.login(satshabad)
         self.logout()
@@ -258,10 +252,9 @@ class TestEnqueue(TestView):
         expect(song_item.artist.name) == song['song']['artist']['name']
         expect(song_item.album.name) == song['song']['album']['name']
 
-    @patch('api.views.views.is_friends')
-    def it_adds_an_item_by_facebook_id(self, is_friends):
+    @patch('api.views.views.assert_are_friends')
+    def it_adds_an_item_by_facebook_id(self, assert_are_friends):
 
-        is_friends.return_value = True
 
         user, uid = self.login(satshabad)
         song = make_song_from(user)
@@ -282,11 +275,10 @@ class TestEnqueue(TestView):
 
 class TestPushNotifications(TestView):
 
-    @patch('api.views.views.is_friends')
-    @patch('api.views.views.send_push_message')
+    @patch('api.views.views.assert_are_friends')
+    @patch('api.lib.push.notify')
     def it_sends_push_messages_for_unlistened_adding(
-        self, send_push_message, is_friends):
-        is_friends.return_value = True
+        self, notify, assert_are_friends):
 
         satshabad['badgeSetting'] = 'unlistened'
         user, uid = self.login(satshabad)
@@ -301,14 +293,13 @@ class TestPushNotifications(TestView):
         orm_user = db.session.query(User).one()
         expect(orm_user.badge_num) == 1
 
-        send_push_message.assert_called_once_with(
+        notify.assert_called_once_with(
             user["deviceToken"], badge_num=1)
 
-    @patch('api.views.views.send_push_message')
-    @patch('api.views.views.is_friends')
-    def it_sends_push_messages_for_shared_addding(
-        self, is_friends, send_push_message):
-        is_friends.return_value = True
+    @patch('api.lib.push.notify')
+    @patch('api.views.views.assert_are_friends')
+    def it_sends_push_messages_for_shared_adding(
+        self, assert_are_friends, notify):
 
         satshabad['badgeSetting'] = 'shared'
         user1, uid1 = self.login(satshabad)
@@ -326,18 +317,17 @@ class TestPushNotifications(TestView):
         orm_user = db.session.query(User).get(uid1)
         expect(orm_user.badge_num) == 1
 
-        send_push_message.assert_called_once_with(
+        notify.assert_called_once_with(
             user1['deviceToken'],
             message='%s shared a song with you' % user2['fullName'],
             badge_num=1,
             name=user2['fullName'],
             item_type='song')
 
-    @patch('api.views.views.send_push_message')
-    @patch('api.views.views.is_friends')
+    @patch('api.lib.push.notify')
+    @patch('api.views.views.assert_are_friends')
     def it_dosent_send_push_messages_for_non_shared_addding(
-        self, is_friends, send_push_message):
-        is_friends.return_value = True
+        self, assert_are_friends, notify):
 
         satshabad['badgeSetting'] = 'shared'
         user, uid = self.login(satshabad)
@@ -352,11 +342,11 @@ class TestPushNotifications(TestView):
         orm_user = db.session.query(User).one()
         expect(orm_user.badge_num) == 0
 
-        expect(send_push_message.called) == False
+        expect(notify.called) == False
 
-    @patch('api.views.views.send_push_message')
+    @patch('api.lib.push.notify')
     def it_sends_push_with_new_badge_number_for_unlistened(
-        self, send_push_message):
+        self, notify):
         satshabad['badgeSetting'] = 'unlistened'
         user, uid = self.login(satshabad)
         song = make_song_from(user)
@@ -367,7 +357,7 @@ class TestPushNotifications(TestView):
                 data=json.dumps(song),
                 content_type='application/json')
 
-            send_push_message.reset_mock()
+            notify.reset_mock()
 
             orm_user = db.session.query(User).one()
             song_id = db.session.query(QueueItem).one().id
@@ -379,13 +369,13 @@ class TestPushNotifications(TestView):
 
         orm_user = db.session.query(User).one()
         expect(orm_user.badge_num) == 0
-        send_push_message.assert_called_once_with(
+        notify.assert_called_once_with(
             user['deviceToken'],
             badge_num=orm_user.badge_num)
 
-    @patch('api.views.views.send_push_message')
+    @patch('api.lib.push.notify')
     def it_doesnt_send_push_with_new_badge_number_when_already_listened(
-        self, send_push_message):
+        self, notify):
 
         satshabad['badgeSetting'] = 'unlistened'
         user, uid = self.login(satshabad)
@@ -397,7 +387,7 @@ class TestPushNotifications(TestView):
                 data=json.dumps(song),
                 content_type='application/json')
 
-            send_push_message.reset_mock()
+            notify.reset_mock()
 
             orm_user = db.session.query(User).one()
             song_id = db.session.query(QueueItem).one().id
@@ -409,13 +399,13 @@ class TestPushNotifications(TestView):
             db.session.add(song_item)
             db.session.commit()
 
-            send_push_message.reset_mock()
+            notify.reset_mock()
             resp = self.client.delete('user/%s/queue/%s' % (uid, song_id))
             expect(resp.status_code) == 200
 
         orm_user = db.session.query(User).one()
         expect(orm_user.badge_num) == 1
-        expect(send_push_message.called) == False
+        expect(notify.called) == False
 
     @patch('api.scripts.feedback.Session')
     @patch('api.scripts.feedback.APNs')
@@ -433,9 +423,9 @@ class TestPushNotifications(TestView):
         expect(user_1.device_token) is None
         expect(user_2.device_token) is None
 
-    @patch('api.views.views.send_push_message')
+    @patch('api.lib.push.notify')
     def it_sends_a_push_notification_when_set_to_listen(
-        self, send_push_message):
+        self, notify):
         satshabad['badgeSetting'] = 'unlistened'
         user, uid = self.login(satshabad)
         song = make_song_from(user)
@@ -452,7 +442,7 @@ class TestPushNotifications(TestView):
             song_id = json.loads(resp.data)['itemId']
             song['saved'] = 1
 
-            send_push_message.reset_mock()
+            notify.reset_mock()
 
             self.client.put(
                 'user/%s/queue/%s' % (uid,
@@ -463,15 +453,14 @@ class TestPushNotifications(TestView):
         orm_user = db.session.query(User).one()
 
         expect(orm_user.badge_num) == 0
-        send_push_message.assert_called_once_with(
+        notify.assert_called_once_with(
             user['deviceToken'], badge_num=0)
 
-    @patch('api.views.views.send_push_message')
-    @patch('api.views.views.is_friends')
+    @patch('api.lib.push.notify')
+    @patch('api.views.views.assert_are_friends')
     def it_recalcs_the_badge_number_when_changed_to_unlistened(
-        self, is_friends, send_push_message):
+        self, assert_are_friends, notify):
 
-        is_friends.return_value = True
 
         satshabad['badgeSetting'] = 'shared'
         user, uid = self.login(satshabad)
@@ -501,12 +490,11 @@ class TestPushNotifications(TestView):
         orm_user = db.session.query(User).get(uid)
         expect(orm_user.badge_num) == 3
 
-    @patch('api.views.views.send_push_message')
-    @patch('api.views.views.is_friends')
+    @patch('api.lib.push.notify')
+    @patch('api.views.views.assert_are_friends')
     def it_recalcs_the_badge_number_when_changed_to_shared(
-        self, is_friends, send_push_message):
+        self, assert_are_friends, notify):
 
-        is_friends.return_value = True
 
         satshabad['badgeSetting'] = 'unlistened'
         user1, uid1 = self.login(satshabad)
@@ -588,10 +576,9 @@ class TestGetQueue(TestView):
 
 class TestGetSent(TestView):
 
-    @patch('api.views.views.send_push_message')
-    @patch('api.views.views.is_friends')
-    def it_gets_the_sent_items(self, is_friends, send_push_message):
-        is_friends.return_value = True
+    @patch('api.lib.push.notify')
+    @patch('api.views.views.assert_are_friends')
+    def it_gets_the_sent_items(self, assert_are_friends, notify):
 
         user1, uid1 = self.login(satshabad)
         self.logout()
@@ -616,7 +603,7 @@ class TestGetSent(TestView):
 
 class TestDeleteQueueItem(TestView):
 
-    def it_deletes_an_items_from_the_queue(self):
+    def it_deletes_an_item_from_the_queue(self):
 
         user, uid = self.login(satshabad)
         song = make_song_from(user)
@@ -627,12 +614,13 @@ class TestDeleteQueueItem(TestView):
                 data=json.dumps(song),
                 content_type='application/json')
 
+
             song_id = db.session.query(QueueItem).one().id
 
             resp = self.client.delete('user/%s/queue/%s' % (uid, song_id))
 
         expect(db.session.query(QueueItem).all()) == []
-        expect(db.session.query(NoteItem).all()) == []
+        expect(db.session.query(SongItem).all()) == []
 
     def it_returns_403_when_tries_to_delete_someone_elses_item(self):
 

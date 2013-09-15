@@ -6,13 +6,22 @@ from fabric.contrib.files import exists
 API_HOME = "/srv/www/queue/api/"
 REPO = "https://github.com/Satshabad/Queue-API.git"
 
+
 @task
-def prod():
+def prod_deploy_all():
     ensure_dir_exists(API_HOME)
     install_git()
     get_code()
     config_sentry_dsn()
     dev()
+
+
+@task
+def prod_deploy_code():
+    get_code()
+    install_as_package()
+    restart_web_servers()
+
 
 @task
 def dev():
@@ -22,13 +31,21 @@ def dev():
     install_queue_api()
     install_web_server()
     ensure_db_exists()
-    run_web_server()
+    restart_web_servers()
+
+
+@task
+def restart():
+    install_as_package()
+    restart_web_servers()
+
 
 def install_queue_api():
     install_pip()
     install_python_dev()
     install_requirements()
     install_as_package()
+
 
 def install_web_server():
     install_uwsgi()
@@ -37,16 +54,20 @@ def install_web_server():
     install_nginx()
     config_nginx()
 
+
 def config_sentry_dsn():
     put("fabfiles/config/sentry_dns.py", API_HOME, use_sudo=True)
 
-def run_web_server():
+
+def restart_web_servers():
     run("sudo service uwsgi restart")
     run("sudo service nginx restart")
+
 
 def ensure_dir_exists(path):
     if not exists(path):
         run('sudo mkdir -p {}'.format(path))
+
 
 def ensure_db_exists():
     run("sudo apt-get -y install sqlite3")
@@ -54,23 +75,31 @@ def ensure_db_exists():
         if not exists("api/queue.db"):
             run("sudo python api/scripts/init_db.py")
 
+
 def install_uwsgi():
     run("sudo apt-get -y install python-pip")
     run("sudo apt-get -y install python-dev")
     run("sudo pip install uwsgi")
 
+
 def config_uwsgi():
     put("fabfiles/config/uwsgi.conf", "/etc/init/uwsgi.conf", use_sudo=True)
+
 
 def install_nginx():
     run("sudo apt-get -y install nginx")
 
+
 def config_nginx():
-    put("fabfiles/config/nginx.conf", "/etc/nginx/sites-available/default", use_sudo=True)
-    put("fabfiles/config/nginx.conf", "/etc/nginx/sites-enabled/default", use_sudo=True)
+    put("fabfiles/config/nginx.conf",
+        "/etc/nginx/sites-available/default", use_sudo=True)
+    put("fabfiles/config/nginx.conf",
+        "/etc/nginx/sites-enabled/default", use_sudo=True)
+
 
 def install_git():
     run("sudo apt-get -y install git")
+
 
 def get_code():
     with cd(API_HOME):
@@ -79,19 +108,32 @@ def get_code():
         else:
             run("sudo git clone {} .".format(REPO))
 
+
 def install_as_package():
+
     with cd(API_HOME):
-            run("sudo python setup.py install")
+        if exists('build'):
+            run("rm -r build")
+        if exists('dist'):
+            run("rm -r dist")
+        if exists('api.egg-info'):
+            run("rm -r api.egg-info")
+
+        run("sudo python setup.py install")
+
 
 def install_requirements():
     with cd(API_HOME):
             run("sudo pip install -r requirements.txt")
 
+
 def install_pip():
     run("sudo apt-get -y install python-pip")
 
+
 def install_make():
     run("sudo apt-get -y install make")
+
 
 def install_python_dev():
     run("sudo apt-get -y update")
