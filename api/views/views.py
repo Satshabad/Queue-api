@@ -149,6 +149,7 @@ def delete_queue_item(user_id, item_id):
 
             push.notify(user.device_token, badge_num=user.badge_num)
 
+    db.session.add(user)
     db.session.commit()
     return make_message("item deleted")
 
@@ -218,10 +219,10 @@ def enqueue_item_by_fbid(fb_id):
 @login_required
 def enqueue_item(user_id):
 
-    queue_item = request.json
-    from_user_id = queue_item['fromUser']['userID']
-    access_token = queue_item['fromUser']['accessToken']
-    media = queue_item[queue_item['type']]
+    post_data = request.json
+    from_user_id = post_data['fromUser']['userID']
+    access_token = post_data['fromUser']['accessToken']
+    item_data = post_data[post_data['type']]
 
     from_user = get_user_or_404(from_user_id)
     to_user = get_user_or_404(user_id)
@@ -229,48 +230,47 @@ def enqueue_item(user_id):
     assert_is_current_user(from_user)
 
     assert_are_friends(from_user.fb_id, to_user.fb_id, access_token)
+
     orm_queue_item = QueueItem(user=to_user, queued_by_user=from_user,
                                urls=None,
                                listened=False,
                                date_queued=calendar.timegm(datetime.datetime.utcnow().utctimetuple()))
-
-    if queue_item['type'] == 'song':
-        orm_song = marshall.create_song(media)
-        orm_urls = marshall.make_urls_for_song(media)
+    if 'song' in post_data:
+        orm_song = marshall.create_song(item_data)
+        orm_urls = marshall.make_urls_for_song(item_data)
 
         orm_queue_item.urls = orm_urls
         orm_queue_item.song_item = [orm_song]
-        db.session.add_all([orm_queue_item, orm_song, orm_urls])
 
-    elif queue_item['type'] == 'artist':
-        orm_artist = marshall.make_artist_model(media)
-        orm_urls = marshall.make_urls_for_artist(media)
+    elif 'artist' in post_data:
+        orm_artist = marshall.make_artist_model(item_data)
+        orm_urls = marshall.make_urls_for_artist(item_data)
 
         orm_queue_item.urls = orm_urls
         orm_queue_item.artist_item = [orm_artist]
-        db.session.add_all([orm_artist, orm_queue_item, orm_urls])
 
-    elif queue_item['type'] == 'note':
-        orm_note = marshall.make_note_model(media)
-        orm_urls = marshall.make_urls_for_note(media)
+    elif 'note' in post_data:
+        orm_note = marshall.make_note_model(item_data)
+        orm_urls = marshall.make_urls_for_note(item_data)
 
         orm_queue_item.urls = orm_urls
         orm_queue_item.note_item = [orm_note]
-        db.session.add_all([orm_note, orm_queue_item, orm_urls])
+
+    db.session.add(orm_queue_item)
 
     if from_user.id != to_user.id and to_user.device_token:
         if to_user.badge_setting == "shared":
             to_user.badge_num += 1
             push.notify(to_user.device_token,
                         message="%s shared a %s with you" % (
-                            from_user.fullname, queue_item['type']),
+                            from_user.fullname, post_data['type']),
                         badge_num=to_user.badge_num,
-                        name=from_user.fullname, item_type=queue_item['type'])
+                        name=from_user.fullname, item_type=post_data['type'])
         else:
             push.notify(to_user.device_token,
                         message="%s shared a %s with you" % (
-                            from_user.fullname, queue_item['type']),
-                        name=from_user.fullname, item_type=queue_item['type'])
+                            from_user.fullname, post_data['type']),
+                        name=from_user.fullname, item_type=post_data['type'])
 
     if from_user.id == to_user.id and to_user.badge_setting == "unlistened":
         to_user.badge_num += 1

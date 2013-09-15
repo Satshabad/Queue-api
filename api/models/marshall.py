@@ -1,4 +1,4 @@
-from .models import SongItem, Artist, Album, UrlsForItem, NoteItem, ArtistItem
+from api.models import SongItem, Artist, Album, UrlsForItem, NoteItem, ArtistItem
 from api.lib import links, lastfm
 
 

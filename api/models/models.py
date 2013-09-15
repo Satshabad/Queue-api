@@ -139,7 +139,7 @@ class QueueItem(db.Model):
     def __repr__(self):
         return "<QueueItem('%s', '%s', '%s', '%s')" % (self.id, self.user, self.queued_by_user, self.listened)
 
-    
+
 class SongItem(db.Model):
     __tablename__ = 'song_items'
 
