@@ -28,6 +28,7 @@ def install_queue_api():
     install_pip()
     install_python_dev()
     install_requirements()
+    install_as_package()
 
 def install_web_server():
     install_uwsgi()
@@ -50,8 +51,8 @@ def ensure_dir_exists(path):
 def ensure_db_exists():
     run("sudo apt-get -y install sqlite3")
     with cd(API_HOME):
-        if not exists("queue.db"):
-            run("sudo python init_db.py")
+        if not exists("api/queue.db"):
+            run("sudo python api/scripts/init_db.py")
 
 def install_uwsgi():
     run("sudo apt-get -y install python-pip")
@@ -77,6 +78,10 @@ def get_code():
             run('sudo git pull origin master')
         else:
             run("sudo git clone {} .".format(REPO))
+
+def install_as_package():
+    with cd(API_HOME):
+            run("sudo python setup.py install")
 
 def install_requirements():
     with cd(API_HOME):

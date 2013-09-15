@@ -1,16 +1,16 @@
 import unittest
 from pprint import pprint
 
-import vcr
+from api.fixtures import vcr, function_name
 from mock import patch
 from expecter import expect
 
-from api import marshall
+from api.models import marshall
 
 class Marshall(unittest.TestCase):
 
-    @patch('api.marshall.Linker.grooveshark') 
-    @patch('api.marshall.Linker.spotify_song') 
+    @patch('api.models.marshall.links.grooveshark') 
+    @patch('api.models.marshall.links.spotify_song') 
     def it_makes_urls_for_song(self, spotify_song, grooveshark):
         data = {"artist": {"name":"Todd Snider", 
                            "images":{"small":"link", 
@@ -79,7 +79,7 @@ class Marshall(unittest.TestCase):
                            "large":"link", 
                            "extraLarge":"link"}}
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/create_incomplete_song.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             song = marshall.create_song(data)
 
         expect(song.name) == "Too Soon to Tell"

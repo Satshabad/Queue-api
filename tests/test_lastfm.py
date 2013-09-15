@@ -3,16 +3,16 @@ import json
 
 from expecter import expect
 from mock import patch
-import vcr
+from api.fixtures import vcr, function_name
 
-from api import lastfm
+from api.lib import lastfm
 
 
 class LastfmSpec(unittest.TestCase):
 
     def it_completes_the_song(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_completion.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             track = lastfm.complete_song("Too soon to tell", "Todd Snider")
 
         expect(track).contains('type')
@@ -31,7 +31,7 @@ class LastfmSpec(unittest.TestCase):
 
     def it_completes_the_song_as_best_it_can(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_completion_no_album.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             track = lastfm.complete_song("Gimme Some Lovin' ", " Spirit")
 
         expect(track).contains('type')
@@ -48,7 +48,7 @@ class LastfmSpec(unittest.TestCase):
 
     def it_gets_the_users_listens(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_listens.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             listens = lastfm.get_user_listens('satshabad')
 
         expect(listens[0]).contains('type')
@@ -78,7 +78,7 @@ class LastfmSpec(unittest.TestCase):
     # Search
     def it_searches_for_artists(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_artists("Love")
 
         expect(result[0]).contains('artist')
@@ -94,7 +94,7 @@ class LastfmSpec(unittest.TestCase):
 
     def it_searches_for_artists_with_no_listeners(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_no_listens.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_artists("firewater")
 
         expect(result[0]).contains('artist')
@@ -110,7 +110,7 @@ class LastfmSpec(unittest.TestCase):
 
     def it_searches_for_artists_with_singular_result(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_single_result.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_artists("daft punk medley")
 
         expect(result[0]).contains('artist')
@@ -126,14 +126,14 @@ class LastfmSpec(unittest.TestCase):
 
     def it_searches_for__nonexistent_artists(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_artist_search_bad.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_artists("askdjaskdjS")
 
         expect(result) == []
 
     def it_searches_for_songs(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_songs("Love")
 
         expect(result[0]).contains('song')
@@ -155,7 +155,7 @@ class LastfmSpec(unittest.TestCase):
 
     def it_searches_for_a_single_songs(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search_single.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_songs("Wake up Motopony")
 
         expect(result[0]).contains('song')
@@ -177,14 +177,14 @@ class LastfmSpec(unittest.TestCase):
 
     def it_searches_for_songs_but_finds_none_for_single_letter(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search_bad_1.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_songs("S")
 
         expect(result) == []
 
     def it_searches_for_songs_but_finds_none_for_nonsense(self):
 
-        with vcr.use_cassette('./fixtures/vcr_cassettes/lastfm_song_search_bad_2.yaml'):
+        with vcr.use_cassette(function_name() + '.yaml'):
             result = lastfm.search_for_songs("Sasdasdasdjlasdj")
 
         expect(result) == []

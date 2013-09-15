@@ -1,8 +1,8 @@
 import os
 
 from apnsclient import Session, APNs 
-from models import User
-from app import db
+from api.models import User
+from api import db
 
 def remove_tokens():
 # feedback needs no persistent connections.

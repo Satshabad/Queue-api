@@ -1,17 +1,17 @@
 import unittest
 import json
 
-import vcr
+from api.fixtures import vcr
 from expecter import expect
 from mock import patch, MagicMock
 
-from api import twit
+from api.lib import twit
 
 
 class TwitSpec(unittest.TestCase):
 
-    @patch('api.lastfm.complete_song')
-    @patch('api.twit.twitter')
+    @patch('api.lib.lastfm.complete_song')
+    @patch('api.lib.twit.twitter')
     def it_uses_lastfm_to_find_song(self, twitter, complete_song):
         complete_song.return_value = {}
         tweet = MagicMock()

@@ -1,2 +1,8 @@
 .vagrant
 *pyc
+*swp
+*.egg-info/
+build/
+dist/
+queue.db
+tests/cassettes

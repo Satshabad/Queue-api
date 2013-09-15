@@ -1,6 +1,5 @@
 from .models import SongItem, Artist, Album, UrlsForItem, NoteItem, ArtistItem
-from .links import Linker
-from . import lastfm
+from api.lib import links, lastfm
 
 
 def song_is_complete_enough(data):
@@ -39,8 +38,8 @@ def make_song_model(data):
 def make_urls_for_song(data):
     name = data['name']
     artist = data['artist']['name']
-    spotify_url = Linker.spotify_song(song=name, artist=artist)
-    grooveshark_url = Linker.grooveshark(artist=artist, song=name)
+    spotify_url = links.spotify_song(song=name, artist=artist)
+    grooveshark_url = links.grooveshark(artist=artist, song=name)
     return (
         UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
     )
@@ -68,8 +67,8 @@ def make_artist_model(data):
 
 
 def make_urls_for_artist(data):
-    spotify_url = Linker.spotify_artist(artist=data['name'])
-    grooveshark_url = Linker.grooveshark(artist=data['name'])
+    spotify_url = links.spotify_artist(artist=data['name'])
+    grooveshark_url = links.grooveshark(artist=data['name'])
     return (
         UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
     )
@@ -86,4 +85,4 @@ def make_note_model(data):
 
 
 def make_urls_for_note(data):
-    return UrlsForItem(other_url=Linker.parse_from_text(data['text']))
+    return UrlsForItem(other_url=links.parse_from_text(data['text']))

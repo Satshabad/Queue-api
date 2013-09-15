@@ -1,3 +1,5 @@
+import vcr
+import inspect
 too_soon_too_tell = {'name': "Too Soon To Tell",
                      'images': {'small': "http://image.com/image.jpeg",
                                 'medium': 'http://image.com/image.jpeg',
@@ -72,3 +74,10 @@ def make_artist_from(user, artist=todd_snider, saved=False):
             'type': 'artist',
             'saved': saved,
             'artist': artist}
+
+vcr = vcr.VCR(
+    cassette_library_dir='tests/cassettes'
+)
+
+def function_name():
+    return inspect.stack()[1][3]

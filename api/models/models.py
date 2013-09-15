@@ -1,7 +1,7 @@
 import calendar
 import json
 
-from app import db
+from api import db
 
 ForeignKey = db.ForeignKey
 ForeignKeyConstraint = db.ForeignKeyConstraint
@@ -11,7 +11,6 @@ Column = db.Column
 Integer = db.Integer
 String = db.String
 Boolean = db.Boolean
-
 
 
 class User(db.Model):

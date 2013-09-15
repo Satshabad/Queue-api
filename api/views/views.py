@@ -12,22 +12,15 @@ from flask import redirect, request, current_app
 from flask.ext.login import login_required, login_user, logout_user, current_user
 
 import requests
+from api import app, db, login_manager
 
-from app import app, db, login_manager
+from api.models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
 
-from models import SongItem, User, Artist, Album, Friend, ArtistItem, NoteItem, UrlsForItem, QueueItem
-import lastfm
-from links import Linker
-import twit
-import marshall
+from api.lib import twit, lastfm
+from api.models import marshall
 
 log = getLogger()
 
-TS_API_KEY = app.config['TS_API_KEY']
-TS_API_URL = app.config['TS_API_URL']
-SP_API_URL = app.config['SP_API_URL']
-LF_API_URL = app.config['LF_API_URL']
-LF_API_KEY = app.config['LF_API_KEY']
 FB_API_URL = app.config['FB_API_URL']
 
 @login_manager.user_loader
@@ -453,8 +446,3 @@ def send_push_message(token, message=None, badge_num=0, name=None,  item_type=No
     if res.needs_retry():
         retry_message = res.retry()
         res = srv.send(retry_message)
-        
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', debug=True, port=5000)
-
