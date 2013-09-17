@@ -76,7 +76,7 @@ class TestLogin(TestView):
 
         user, uid = self.login(satshabad)
 
-    def it_logs_the_user_in_for_the_first_time(self):
+    def it_makes_a_new_user_on_login(self):
         user, uid = self.login(satshabad)
 
         db_user = db.session.query(User).one()
@@ -100,6 +100,92 @@ class TestLogin(TestView):
 
         resp = self.client.get('/logout')
         expect(resp.status_code) == 401
+
+    @patch('api.lib.facebook.verify')
+    def it_doesnt_make_account_in_when_facebook_says_no(self, verify):
+        user, uid = self.login(satshabad)
+        self.logout()
+
+        verify.return_value = False
+
+        resp = self.client.post(
+            '/login', data=json.dumps(user),
+            content_type='application/json')
+        expect(resp.status_code) == 403
+
+    @patch('api.lib.facebook.verify')
+    def it_doesnt_login_when_facebook_says_no(self, verify):
+        verify.return_value = False
+        user = satshabad
+
+        resp = self.client.post(
+            '/login', data=json.dumps(user),
+            content_type='application/json')
+        expect(resp.status_code) == 403
+
+
+    @patch('api.lib.facebook.verify')
+    def it_doesnt_log_in_without_access_token_unless_unclaimed(self, verify):
+        user, uid = self.login(satshabad)
+        self.logout()
+        del user['accessToken']
+
+        resp = self.client.post(
+            '/login', data=json.dumps(user),
+            content_type='application/json')
+        expect(resp.status_code) == 403
+
+    @patch('api.lib.facebook.verify')
+    def it_doesnt_make_a_user_without_access_token(self, verify):
+        user = satshabad
+        del user['accessToken']
+
+        resp = self.client.post(
+            '/login', data=json.dumps(user),
+            content_type='application/json')
+        expect(resp.status_code) == 400
+
+    @patch('api.views.views.assert_are_friends')
+    def it_logs_in_an_anon_user_after_share(self, assert_are_friends):
+        user1, uid1 = self.login(satshabad)
+        user2 = fateh
+
+        fb_id = user2['fbId']
+        song = make_song_from(user1)
+
+        with vcr.use_cassette(function_name() + '.yaml'):
+            resp = self.client.post(
+                'fbuser/%s/queue' % fb_id, data=json.dumps(song),
+                content_type='application/json')
+
+        db_user = User.query.filter(User.fb_id == fb_id).one()
+        expect(db_user.claimed) == False
+        self.logout()
+        del user2['accessToken']
+
+        user2, uid2 = self.login(user2)
+
+    @patch('api.views.views.assert_are_friends')
+    def it_lets_a_user_claim_an_account_after_an_anon_share(self, assert_are_friends):
+        user1, uid1 = self.login(satshabad)
+        user2 = fateh
+
+        fb_id = user2['fbId']
+        song = make_song_from(user1)
+
+        with vcr.use_cassette(function_name() + '.yaml'):
+            resp = self.client.post(
+                'fbuser/%s/queue' % fb_id, data=json.dumps(song),
+                content_type='application/json')
+
+        db_user = User.query.filter(User.fb_id == fb_id).one()
+        expect(db_user.claimed) == False
+        self.logout()
+
+        user2, uid2 = self.login(user2)
+
+        db_user = User.query.filter(User.fb_id == fb_id).one()
+        expect(db_user.claimed) == True
 
 
 class TestEnqueue(TestView):
@@ -269,6 +355,37 @@ class TestEnqueue(TestView):
 
         expect(queue_item.queued_by_user.id) == uid
         expect(queue_item.user.fb_id) == user['fbId']
+
+
+    @patch('api.views.views.assert_are_friends')
+    def it_doesnt_create_a_new_account_when_not_friends(self, assert_are_friends):
+        assert_are_friends.side_effect = api.views.views.APIException(
+            "blah", 403)
+        user, uid = self.login(satshabad)
+
+        song = make_song_from(user)
+
+        with vcr.use_cassette(function_name() + '.yaml'):
+            resp = self.client.post(
+                'fbuser/%s/queue' % str(32), data=json.dumps(song),
+                content_type='application/json')
+
+        expect(resp.status_code) == 403
+
+    @patch('api.views.views.assert_are_friends')
+    def it_creates_a_new_account_for_a_non_user(self, assert_are_friends):
+        user, uid = self.login(satshabad)
+
+        song = make_song_from(user)
+
+        with vcr.use_cassette(function_name() + '.yaml'):
+            resp = self.client.post(
+                'fbuser/%s/queue' % str(32), data=json.dumps(song),
+                content_type='application/json')
+
+        db_user = User.query.filter(User.fb_id == 32).one()
+        expect(db_user.claimed) == False
+        expect(QueueItem.query.filter(QueueItem.user_id == db_user.id).one())
 
 
 class TestPushNotifications(TestView):

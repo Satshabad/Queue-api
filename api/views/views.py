@@ -11,6 +11,7 @@ from api.lib import twit, lastfm, facebook, push
 from api.models import marshall
 
 from api.views.base import (make_message,
+                            assert_user_is_unclaimed,
                             get_user_or_404,
                             APIException,
                             get_user,
@@ -36,24 +37,39 @@ def home():
 @app.route('/login', methods=['POST'])
 def login():
     params = request.json
-    access_token = params['accessToken']
+    access_token = params.get('accessToken')
     fb_id = params['fbId']
-
-    if not facebook.verify(fb_id, access_token):
-        raise APIException("access token invalid", 400)
 
     user = get_user(fb_id, by_fb_id=True)
 
-    if not user:
-        user = User(fb_id=fb_id, access_token=access_token,
-                    fullname=params['fullName'],
-                    image_link=params['imageLink'],
-                    badge_setting=params.get('badgeSetting'),
-                    device_token=params.get('deviceToken'),
-                    badge_num=0)
+    if user is None:
+        if access_token is None:
+            raise APIException('please provide accessToken', 400)
+        else:
 
-        db.session.add(user)
-        db.session.commit()
+            if not facebook.verify(fb_id, access_token):
+                raise APIException("access token invalid", 403)
+
+            user = User(fb_id=fb_id, access_token=access_token,
+                        fullname=params['fullName'],
+                        image_link=params['imageLink'],
+                        badge_setting=params.get('badgeSetting'),
+                        device_token=params.get('deviceToken'),
+                        badge_num=0,
+                        claimed=True)
+
+            db.session.add(user)
+            db.session.commit()
+    else:
+        if access_token is None:
+            assert_user_is_unclaimed(user)
+        else:
+            if not facebook.verify(fb_id, access_token):
+                raise APIException("access token invalid", 403)
+            if user.claimed == False:
+                user.claimed = True
+                db.session.add(user)
+                db.session.commit()
 
     if login_user(user, remember=True):
         session.permanent = True
@@ -191,9 +207,25 @@ def change_queue_item(user_id, item_id):
 def enqueue_item_by_fbid(fb_id):
     params = request.json
     from_user_id = params['fromUser']['userID']
+    access_token = params['fromUser']['accessToken']
 
     from_user = get_user_or_404(from_user_id)
-    to_user = get_user_or_404(fb_id, by_fb_id=True)
+    to_user = get_user(fb_id, by_fb_id=True)
+
+    assert_are_friends(from_user.fb_id, fb_id, access_token)
+
+    if to_user is None:
+        # TODO: maybe get some info here
+        to_user = User(fb_id=fb_id, access_token=None,
+                       fullname="",
+                       image_link="",
+                       badge_setting=None,
+                       device_token=None,
+                       badge_num=0,
+                       claimed=False)
+
+        db.session.add(to_user)
+        db.session.commit()
 
     assert_is_current_user(from_user)
 
@@ -269,6 +301,22 @@ def get_sent(user_id):
 
     items = QueueItem.query.filter(
         QueueItem.queued_by_id == user.id).paginate(page, error_out=False).items
+
+    queue = []
+    for item in items:
+        queue.append(item.dictify())
+
+    return jsonify({'queue': {'items': list(reversed(queue))}})
+
+
+@app.route('/user/<user_id>/saved', methods=['GET'])
+def get_saved(user_id):
+    page = int(request.args.get('page') or 1)
+    user = get_user_or_404(user_id)
+
+    items = QueueItem.query.filter(
+        QueueItem.user_id == user.id).filter(
+            QueueItem.listened == True).paginate(page, error_out=False).items
 
     queue = []
     for item in items:

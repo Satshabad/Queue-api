@@ -44,6 +44,11 @@ def get_user_or_404(user_id, by_fb_id=False):
     return user
 
 
+def assert_user_is_unclaimed(user):
+    if user.claimed == True:
+        raise APIException("you don't have permission to do that", 403)
+
+
 def assert_is_current_user(user):
     if user != current_user:
         raise APIException("you don't have permission to do that", 403)

@@ -26,9 +26,10 @@ class User(db.Model):
     device_token = Column(String)
     badge_setting = Column(String)
     badge_num = Column(Integer)
+    claimed = Column(Boolean)
 
     def is_authenticated(self):
-       return True 
+       return True
 
     def is_active(self):
         return True
