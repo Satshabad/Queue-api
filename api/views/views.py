@@ -96,7 +96,6 @@ def change_user(user_id):
     badge_setting = params.get('badgeSetting', None)
 
     user = get_user_or_404(user_id)
-
     assert_is_current_user(user)
 
     if lastfm_name is not None:
@@ -137,7 +136,6 @@ def get_queue(user_id):
 @login_required
 def delete_queue_item(user_id, item_id):
     user = get_user_or_404(user_id)
-
     assert_is_current_user(user)
 
     queue_item = QueueItem.query.get(item_id)
@@ -171,7 +169,6 @@ def change_queue_item(user_id, item_id):
     listened = True if request.json['saved'] == 1 else False
 
     user = get_user_or_404(user_id)
-
     assert_is_current_user(user)
 
     item = QueueItem.query.get(item_id)
@@ -316,7 +313,7 @@ def get_saved(user_id):
 
     items = QueueItem.query.filter(
         QueueItem.user_id == user.id).filter(
-            QueueItem.listened == True).paginate(page, error_out=False).items
+        QueueItem.listened).paginate(page, error_out=False).items
 
     queue = []
     for item in items:

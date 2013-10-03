@@ -123,7 +123,6 @@ class TestLogin(TestView):
             content_type='application/json')
         expect(resp.status_code) == 403
 
-
     @patch('api.lib.facebook.verify')
     def it_doesnt_log_in_without_access_token_unless_unclaimed(self, verify):
         user, uid = self.login(satshabad)
@@ -166,7 +165,8 @@ class TestLogin(TestView):
         user2, uid2 = self.login(user2)
 
     @patch('api.views.views.assert_are_friends')
-    def it_lets_a_user_claim_an_account_after_an_anon_share(self, assert_are_friends):
+    def it_lets_a_user_claim_an_account_after_an_anon_share(
+        self, assert_are_friends):
         user1, uid1 = self.login(satshabad)
         user2 = fateh
 
@@ -185,7 +185,7 @@ class TestLogin(TestView):
         user2, uid2 = self.login(user2)
 
         db_user = User.query.filter(User.fb_id == fb_id).one()
-        expect(db_user.claimed) == True
+        expect(db_user.claimed)
 
 
 class TestEnqueue(TestView):
@@ -356,9 +356,9 @@ class TestEnqueue(TestView):
         expect(queue_item.queued_by_user.id) == uid
         expect(queue_item.user.fb_id) == user['fbId']
 
-
     @patch('api.views.views.assert_are_friends')
-    def it_doesnt_create_a_new_account_when_not_friends(self, assert_are_friends):
+    def it_doesnt_create_a_new_account_when_not_friends(
+        self, assert_are_friends):
         assert_are_friends.side_effect = api.views.views.APIException(
             "blah", 403)
         user, uid = self.login(satshabad)
