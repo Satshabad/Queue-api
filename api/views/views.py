@@ -123,13 +123,16 @@ def get_queue(user_id):
     user = get_user_or_404(user_id)
 
     items = QueueItem.query.filter(
-        QueueItem.user_id == user.id).paginate(page, error_out=False).items
+        QueueItem.user_id == user.id).filter(
+        QueueItem.listened == 0).order_by(
+        QueueItem.date_queued.desc()).paginate(
+        page, error_out=False).items
 
     queue = []
     for item in items:
         queue.append(item.dictify())
 
-    return jsonify({'queue': {'items': list(reversed(queue))}})
+    return jsonify({'queue': {'items': list(queue)}})
 
 
 @app.route('/user/<user_id>/queue/<item_id>', methods=['DELETE'])
@@ -163,7 +166,7 @@ def delete_queue_item(user_id, item_id):
     return make_message("item deleted")
 
 
-@app.route('/user/<user_id>/queue/<item_id>', methods=['PUT'])
+@app.route('/user/<user_id>/queue/<item_id>', methods=['PUT', 'POST'])
 @login_required
 def change_queue_item(user_id, item_id):
     listened = True if request.json['saved'] == 1 else False
@@ -297,13 +300,15 @@ def get_sent(user_id):
     user = get_user_or_404(user_id)
 
     items = QueueItem.query.filter(
-        QueueItem.queued_by_id == user.id).paginate(page, error_out=False).items
+        QueueItem.queued_by_id == user.id).order_by(
+        QueueItem.date_queued.desc()).paginate(
+        page, error_out=False).items
 
     queue = []
     for item in items:
         queue.append(item.dictify())
 
-    return jsonify({'queue': {'items': list(reversed(queue))}})
+    return jsonify({'queue': {'items': list(queue)}})
 
 
 @app.route('/user/<user_id>/saved', methods=['GET'])
@@ -313,13 +318,14 @@ def get_saved(user_id):
 
     items = QueueItem.query.filter(
         QueueItem.user_id == user.id).filter(
-        QueueItem.listened).paginate(page, error_out=False).items
+        QueueItem.listened).order_by(
+        QueueItem.date_queued.desc()).paginate(page, error_out=False).items
 
     queue = []
     for item in items:
         queue.append(item.dictify())
 
-    return jsonify({'queue': {'items': list(reversed(queue))}})
+    return jsonify({'queue': {'items': list(queue)}})
 
 
 @app.route('/user/<user_id>/listens', methods=['GET'])
