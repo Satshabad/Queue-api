@@ -28,6 +28,8 @@ from api.models import (SongItem,
                         UrlsForItem,
                         QueueItem)
 
+DEFAULT_SIZE = 20
+
 
 @app.route('/', methods=['GET'])
 def home():
@@ -297,13 +299,14 @@ def enqueue_item(user_id):
 @app.route('/user/<user_id>/sent', methods=['GET'])
 def get_sent(user_id):
     page = int(request.args.get('page') or 1)
+    size = int(request.args.get('size') or DEFAULT_SIZE)
     user = get_user_or_404(user_id)
 
     items = QueueItem.query.filter(
         QueueItem.queued_by_id == user.id).filter(
         QueueItem.user_id != user.id).order_by(
         QueueItem.date_queued.desc()).paginate(
-        page, error_out=False).items
+        page, per_page=size, error_out=False).items
 
     queue = []
     for item in items:
