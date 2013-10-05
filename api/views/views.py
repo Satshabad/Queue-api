@@ -300,7 +300,8 @@ def get_sent(user_id):
     user = get_user_or_404(user_id)
 
     items = QueueItem.query.filter(
-        QueueItem.queued_by_id == user.id).order_by(
+        QueueItem.queued_by_id == user.id).filter(
+        QueueItem.user_id != user.id).order_by(
         QueueItem.date_queued.desc()).paginate(
         page, error_out=False).items
 
@@ -326,6 +327,27 @@ def get_saved(user_id):
         queue.append(item.dictify())
 
     return jsonify({'queue': {'items': list(queue)}})
+
+
+@app.route('/user/<user_id>/saved/<item_id>', methods=['DELETE'])
+@login_required
+def delete_queue_item(user_id, item_id):
+    user = get_user_or_404(user_id)
+    assert_is_current_user(user)
+
+    queue_item = QueueItem.query.get(item_id)
+
+    if queue_item is None:
+        raise APIException("saved item not found", 404)
+
+    assert_is_current_user(queue_item.user)
+
+    item_type, item = queue_item.get_item()
+    db.session.delete(item)
+    db.session.delete(queue_item)
+
+    db.session.commit()
+    return make_message("item deleted")
 
 
 @app.route('/user/<user_id>/listens', methods=['GET'])

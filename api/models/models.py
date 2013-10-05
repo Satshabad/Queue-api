@@ -52,6 +52,13 @@ class User(db.Model):
                 'deviceToken':self.device_token,
                 'imageLink':self.image_link}
 
+    def limted_dictify(self):
+        return {'userID':self.id,
+                'fbId':self.fb_id,
+                'fullName':self.fullname,
+                'image':self.image_link,
+                'imageLink':self.image_link}
+
     def __repr__(self):
         return "<User('%s','%s', '%s')>" % (self.id, self.fullname, self.image_link)
 
@@ -131,6 +138,7 @@ class QueueItem(db.Model):
         return {'itemId':self.id,
                 'saved': 1 if self.listened else 0,
                 'fromUser': self.queued_by_user.dictify(),
+                'toUser': self.user.limted_dictify(),
                 'urls':self.urls.dictify(),
                 'type': item_type,
                 item_type: item.dictify(),
