@@ -121,6 +121,7 @@ def change_user(user_id):
 @app.route('/user/<user_id>/queue', methods=['GET'])
 def get_queue(user_id):
     page = int(request.args.get('page') or 1)
+    size = int(request.args.get('size') or DEFAULT_SIZE)
 
     user = get_user_or_404(user_id)
 
@@ -128,7 +129,7 @@ def get_queue(user_id):
         QueueItem.user_id == user.id).filter(
         QueueItem.listened == 0).order_by(
         QueueItem.date_queued.desc()).paginate(
-        page, error_out=False).items
+        page, per_page=size, error_out=False).items
 
     queue = []
     for item in items:
@@ -318,12 +319,13 @@ def get_sent(user_id):
 @app.route('/user/<user_id>/saved', methods=['GET'])
 def get_saved(user_id):
     page = int(request.args.get('page') or 1)
+    size = int(request.args.get('size') or DEFAULT_SIZE)
     user = get_user_or_404(user_id)
 
     items = QueueItem.query.filter(
         QueueItem.user_id == user.id).filter(
         QueueItem.listened).order_by(
-        QueueItem.date_queued.desc()).paginate(page, error_out=False).items
+        QueueItem.date_queued.desc()).paginate(page, per_page=size, error_out=False).items
 
     queue = []
     for item in items:
