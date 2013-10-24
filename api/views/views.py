@@ -28,7 +28,7 @@ from api.models import (SongItem,
                         UrlsForItem,
                         QueueItem)
 
-DEFAULT_SIZE = 20
+DEFAULT_SIZE = 1000
 
 
 @app.route('/', methods=['GET'])
