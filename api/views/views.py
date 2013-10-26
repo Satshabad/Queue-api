@@ -157,7 +157,6 @@ def delete_queue_item(user_id, item_id):
     item_type, item = queue_item.get_item()
     db.session.delete(item)
     db.session.delete(queue_item)
-
     if user.badge_setting == "unlistened":
         if not was_listened:
             user.badge_num -= 1
@@ -332,28 +331,6 @@ def get_saved(user_id):
         queue.append(item.dictify())
 
     return jsonify({'queue': {'items': list(queue)}})
-
-
-@app.route('/user/<user_id>/saved/<item_id>', methods=['DELETE'])
-@login_required
-def delete_queue_item(user_id, item_id):
-    user = get_user_or_404(user_id)
-    assert_is_current_user(user)
-
-    queue_item = QueueItem.query.get(item_id)
-
-    if queue_item is None:
-        raise APIException("saved item not found", 404)
-
-    assert_is_current_user(queue_item.user)
-
-    item_type, item = queue_item.get_item()
-    db.session.delete(item)
-    db.session.delete(queue_item)
-
-    db.session.commit()
-    return make_message("item deleted")
-
 
 @app.route('/user/<user_id>/listens', methods=['GET'])
 def get_listens(user_id):
