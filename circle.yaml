@@ -1,0 +1,5 @@
+deployment:
+  production:
+    branch: master
+    commands:
+      - fab -f fabfiles/deploy.py prod_deploy_all -H root@198.199.67.210
