@@ -8,7 +8,7 @@ from raven.contrib.flask import Sentry
 
 app = Flask(__name__)
 
-if os.environ['QUEUE_API_MODE'] == 'TEST':
+if os.environ['QUEUE_API_MODE'] and os.environ['QUEUE_API_MODE'] == 'TEST':
     app.config.from_object("api.test_config")
 else:
     app.config.from_object("api.prod_config")
