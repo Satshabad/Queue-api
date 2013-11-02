@@ -86,11 +86,11 @@ class QueueItem(db.Model):
     date_queued = Column(Integer)
 
     user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", foreign_keys=[user_id], 
+    user = relationship("User", foreign_keys=[user_id],
                         backref=backref('queue_items', order_by=date_queued))
 
     queued_by_id = Column(Integer, ForeignKey('users.id'))
-    queued_by_user = relationship("User", foreign_keys=[queued_by_id], 
+    queued_by_user = relationship("User", foreign_keys=[queued_by_id],
                                   backref=backref('sent_queue_items', order_by=date_queued))
 
     urls_id = Column(Integer, ForeignKey('urlsforitems.id'))
@@ -135,9 +135,11 @@ class QueueItem(db.Model):
 
     def dictify(self):
         item_type, item = self.get_item()
+        from_user =  self.queued_by_user.dictify()
+        del from_user['accessToken']
         return {'itemId':self.id,
                 'saved': 1 if self.listened else 0,
-                'fromUser': self.queued_by_user.dictify(),
+                'fromUser': from_user,
                 'toUser': self.user.limted_dictify(),
                 'urls':self.urls.dictify(),
                 'type': item_type,
