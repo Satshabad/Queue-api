@@ -442,6 +442,7 @@ class TestPushNotifications(TestView):
     @patch('api.lib.push.push')
     def it_sends_push_with_new_badge_number_for_unlistened(
         self, push):
+
         satshabad['badgeSetting'] = 'unlistened'
         user, uid = self.login(satshabad)
         song = make_song_from(user)

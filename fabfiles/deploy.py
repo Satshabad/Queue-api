@@ -4,12 +4,15 @@ from fabtools.vagrant import vagrant
 from fabric.contrib.files import exists
 
 API_HOME = "/srv/www/queue/api/"
-REPO = "https://github.com/Satshabad/Queue-API.git"
+WEB_HOME = "/srv/www/queue/website/"
+API_REPO = "https://github.com/Satshabad/Queue-api.git"
+WEB_REPO = "https://github.com/Satshabad/Queue-website"
 
 
 @task
 def prod_deploy_all():
     ensure_dir_exists(API_HOME)
+    ensure_dir_exists(WEB_HOME)
     install_git()
     get_code()
     config_sentry_dsn()
@@ -27,6 +30,7 @@ def prod_deploy_code():
 def dev():
     install_make()
     ensure_dir_exists(API_HOME)
+    ensure_dir_exists(WEB_HOME)
     ensure_dir_exists("{}logs".format(API_HOME))
     install_queue_api()
     install_web_server()
@@ -56,7 +60,7 @@ def install_web_server():
 
 
 def config_sentry_dsn():
-    put("fabfiles/config/sentry_dns.py", API_HOME, use_sudo=True)
+    put("fabfiles/config/sentry_dsn.py", API_HOME, use_sudo=True)
 
 
 def restart_web_servers():
@@ -106,8 +110,13 @@ def get_code():
         if run('ls'):
             run('sudo git pull origin master')
         else:
-            run("sudo git clone {} .".format(REPO))
+            run("sudo git clone {} .".format(API_REPO))
 
+    with cd(WEB_HOME):
+        if run('ls'):
+            run('sudo git pull origin master')
+        else:
+            run("sudo git clone {} .".format(WEB_REPO))
 
 def install_as_package():
 
