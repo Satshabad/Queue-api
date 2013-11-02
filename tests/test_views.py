@@ -557,6 +557,7 @@ class TestListens(TestView):
 
     def it_gets_the_listens(self):
         user, uid = self.login(satshabad)
+        user['lastFMUsername'] = 'satshabad'
 
         with vcr.use_cassette(function_name() + '.yaml'):
             resp = self.client.put(

@@ -281,14 +281,14 @@ def enqueue_item(user_id):
 
         if to_user.badge_setting == "unlistened":
             to_user.badge_num += 1
-            push.alert_and_change_badge_number(
-                from_user, to_user, params['type'])
+            # push.alert_and_change_badge_number(
+            #     from_user, to_user, params['type'])
 
     else:
         if to_user.badge_setting == "unlistened":
             to_user.badge_num += 1
 
-            push.change_badge_number(to_user)
+            # push.change_badge_number(to_user)
 
     db.session.add(to_user)
     db.session.commit()

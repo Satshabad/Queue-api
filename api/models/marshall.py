@@ -40,8 +40,11 @@ def make_urls_for_song(data):
     artist = data['artist']['name']
     spotify_url = links.spotify_song(song=name, artist=artist)
     grooveshark_url = links.grooveshark(artist=artist, song=name)
+    youtube_url = links.youtube(artist=artist, song=name)
     return (
-        UrlsForItem(spotify_url=spotify_url, grooveshark_url=grooveshark_url)
+        UrlsForItem(spotify_url=spotify_url,
+                    grooveshark_url=grooveshark_url,
+                    youtube_url=youtube_url)
     )
 
 

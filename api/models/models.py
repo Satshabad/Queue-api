@@ -319,6 +319,7 @@ class UrlsForItem(db.Model):
     id = Column(Integer, primary_key=True)
     spotify_url = Column(String)
     grooveshark_url = Column(String)
+    youtube_url = Column(String)
     other_url = Column(String)
 
 
@@ -326,6 +327,7 @@ class UrlsForItem(db.Model):
         return {
                 'spotify':self.spotify_url,
                 'grooveshark':self.grooveshark_url,
+                'youtube':self.youtube_url,
                 'other':self.other_url
                 }
 
