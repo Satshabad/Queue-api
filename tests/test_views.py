@@ -757,3 +757,14 @@ class TestUpdateUser(TestView):
 
         expect(resp.status_code) == 200
         expect(db.session.query(User).one().twitter_name) == "satshabad"
+
+class TestPush(TestView):
+
+    @patch('api.lib.push.APNs')
+    def it_has_the_cert(self, apns):
+        api.lib.push.push(
+            "e9d331ab1c676b1ddc559ef0ead0dfed8c97bd682facb9c5ee818ba3ae51577e",
+            "message",
+            2,
+            "satshabad",
+            "song")
