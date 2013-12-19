@@ -41,10 +41,17 @@ def grooveshark(artist, song=""):
     if link.status_code != 200:
         return None
 
-    if not link.json():
-        return None
+    try:
+        string_url = link.json()
 
-    return link.json()
+        if not string_url
+            return None
+
+        return string_url
+
+    except Exception:
+        # TODO log this exception
+        return None
 
 
 def youtube(song, artist):
