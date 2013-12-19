@@ -44,7 +44,7 @@ def grooveshark(artist, song=""):
     try:
         string_url = link.json()
 
-        if not string_url
+        if not string_url:
             return None
 
         return string_url
