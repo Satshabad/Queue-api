@@ -127,8 +127,7 @@ def get_queue(user_id):
 
     items = QueueItem.query.filter(
         QueueItem.user_id == user.id).filter(
-        QueueItem.listened == 0).filter(
-        QueueItem.no_show != True).order_by(
+        QueueItem.listened == 0).order_by(
         QueueItem.date_queued.desc()).paginate(
         page, per_page=size, error_out=False).items
 
