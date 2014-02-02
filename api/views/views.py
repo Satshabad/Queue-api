@@ -127,7 +127,8 @@ def get_queue(user_id):
 
     items = QueueItem.query.filter(
         QueueItem.user_id == user.id).filter(
-        QueueItem.listened == 0).order_by(
+        QueueItem.listened == 0).filter(
+        QueueItem.no_show != True).order_by(
         QueueItem.date_queued.desc()).paginate(
         page, per_page=size, error_out=False).items
 
@@ -154,9 +155,8 @@ def delete_queue_item(user_id, item_id):
     was_shared = queue_item.queued_by_id != queue_item.user_id
     was_listened = queue_item.listened
 
-    item_type, item = queue_item.get_item()
-    db.session.delete(item)
-    db.session.delete(queue_item)
+    queue_item.no_show = True
+
     if user.badge_setting == "unlistened":
         if not was_listened:
             user.badge_num -= 1
@@ -164,6 +164,7 @@ def delete_queue_item(user_id, item_id):
             push.change_badge_number(user)
 
     db.session.add(user)
+    db.session.add(queue_item)
     db.session.commit()
     return make_message("item deleted")
 
@@ -251,6 +252,7 @@ def enqueue_item(user_id):
     assert_are_friends(from_user.fb_id, to_user.fb_id, access_token)
 
     orm_queue_item = QueueItem(user=to_user, queued_by_user=from_user,
+                               no_show = False,
                                urls=None,
                                listened=False,
                                date_queued=calendar.timegm(datetime.datetime.utcnow().utctimetuple()))

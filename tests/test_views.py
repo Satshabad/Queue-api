@@ -636,10 +636,13 @@ class TestDeleteQueueItem(TestView):
 
             song_id = db.session.query(QueueItem).one().id
 
-            resp = self.client.delete('user/%s/queue/%s' % (uid, song_id))
+            self.client.delete('user/%s/queue/%s' % (uid, song_id))
+            resp = self.client.get('user/%s/queue' % uid)
 
-        expect(db.session.query(QueueItem).all()) == []
-        expect(db.session.query(SongItem).all()) == []
+        expect(db.session.query(QueueItem).one().no_show) == True
+
+        data = json.loads(resp.data)
+        expect(data['queue']['items']) == []
 
     def it_returns_403_when_tries_to_delete_someone_elses_item(self):
 

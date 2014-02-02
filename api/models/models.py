@@ -84,6 +84,7 @@ class QueueItem(db.Model):
 
     id = Column(Integer, primary_key=True)
     date_queued = Column(Integer)
+    no_show = Column(Boolean)
 
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship("User", foreign_keys=[user_id],
